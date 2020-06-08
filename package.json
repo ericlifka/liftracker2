@@ -10,8 +10,12 @@
     "start": "parcel index.html"
   },
   "dependencies": {
+    "@types/react": "^16.9.35",
+    "@types/react-dom": "^16.9.8",
+    "@types/react-redux": "^7.1.9",
     "react": "^16.13.1",
-    "react-dom": "^16.13.1"
+    "react-dom": "^16.13.1",
+    "react-redux": "^7.2.0"
   },
   "devDependencies": {
     "parcel-bundler": "^1.12.4",
