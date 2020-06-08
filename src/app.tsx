@@ -20,6 +20,7 @@ const init: () => Model =
 enum Actions
   { increment
   , decrement
+  , reset
   }
 
 type IncrementAction =
@@ -44,9 +45,19 @@ const decrement: (quantity: number) => DecrementAction =
   , quantity
   })
 
+type ResetAction =
+  { type: Actions.reset
+  }
+
+const reset: () => ResetAction =
+() => (
+  { type: Actions.reset
+  })
+
 type Msg
   = IncrementAction
   | DecrementAction
+  | ResetAction
 
 const update: (model: Model, msg: Msg) => Model =
 (model, msg) => {
@@ -61,6 +72,11 @@ const update: (model: Model, msg: Msg) => Model =
       , counter: model.counter - msg.quantity
       })
 
+    case Actions.reset: return (
+      { ... model
+      , counter: 0
+      })
+
     default: return model
   }
 }
@@ -69,6 +85,8 @@ const { dispatch, getState, subscribe } = createStore(update, init())
 
 
 // -- View
+
+type Html = JSX.Element
 
 const View: FunctionComponent =
 () => {
@@ -85,11 +103,19 @@ type AppProps =
 const App: FunctionComponent<AppProps> =
 ({ model }) =>
   <div>
-    <button onClick={() => dispatch(decrement(1))}>-1</button>
-    <div>{model.counter}</div>
-    <button onClick={() => dispatch(increment(1))}>+1</button>
+    <div style={{ display: "flex" }}>
+      {button("-1", decrement(1))}
+      <div>{model.counter}</div>
+      {button("+1", increment(1))}
+    </div>
+    <div style={{ display: "flex" }}>
+      {button("clear", reset())}
+    </div>
   </div>
 
+const button: (text: string, msg: Msg) => Html =
+(text, msg) =>
+  <button onClick={() => dispatch(msg)}>{text}</button>
 
 // -- Main
 
