@@ -59,12 +59,17 @@ const App: (props: { model: Model }) => Html =
   <div className="app-layout">
     <div className="top-affordance"></div>
     <div className="top-bar">
-      Liftrackr
+      <button className="navigation">
+        <i className="material-icons">arrow_back</i>
+      </button>
+      <div className="title">
+        Liftrackr
+      </div>
     </div>
     <div className="content">
 
     </div>
-    <button className="primary-action">+</button>
+    <button className="primary-action"><i className="material-icons md-48">add</i></button>
   </div>
 
 
