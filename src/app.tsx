@@ -9,26 +9,46 @@ import './styles/app.less'
 
 // -- Models
 
-enum Screen
-  { index
-  , create
+enum Scene
+  { index = 'index'
+  , create = 'create'
   }
 
-type IndexParams = void
-type CreateParams = void
+type IndexParams = null
+type CreateParams = null
 
-type NavigationParams
-  = IndexParams
-  | CreateParams
+type IndexScene =
+  { scene: Scene.index
+  , params: IndexParams
+  }
+const indexScene: () => IndexScene =
+() => (
+  { scene: Scene.index
+  , params: null
+  })
+
+type CreateScene =
+  { scene: Scene.create
+  , params: CreateParams
+  }
+const createScene: () => CreateScene =
+() => (
+  { scene: Scene.create
+  , params: null
+  })
+
+type ActiveScene
+  = IndexScene
+  | CreateScene
 
 
 type Model =
-  { activeScreen: Screen
+  { activeScene: ActiveScene
   }
 
 const init: () => Model =
 () => (
-  { activeScreen: Screen.index
+  { activeScene: indexScene()
   })
 
 
@@ -36,21 +56,19 @@ const init: () => Model =
 // -- Update
 
 enum Action
-  { navigate
+  { navigate = 'navigate'
   }
 
 
 type NavigateAction =
   { type: Action.navigate
-  , screen: Screen
-  , params: NavigationParams
+  , scene: ActiveScene
   }
 
-const navigate: (screen: Screen, params: NavigationParams) => NavigateAction =
-(screen, params) => (
+const navigate: (scene: ActiveScene) => NavigateAction =
+(scene) => (
   { type: Action.navigate
-  , screen
-  , params
+  , scene
   })
 
 
@@ -62,8 +80,9 @@ const update: (model: Model, msg: Msg) => Model =
   switch (msg.type) {
     case Action.navigate: return(
       { ...model
-      , activeScreen: msg.screen
+      , activeScene: { ...msg.scene }
       })
+
     default: return model
   }
 }
@@ -92,20 +111,18 @@ const View: () => Html =
 
 const App: (props: { model: Model }) => Html =
 ({ model }) => {
-  switch (model.activeScreen) {
-    case Screen.index: return indexScreen(model)
-    case Screen.create: return createScreen(model)
+  const { scene, params } = model.activeScene
+  switch (scene) {
+    case Scene.index: return indexScreen(params, model)
+    case Scene.create: return createScreen(params, model)
   }
 }
 
-const indexScreen: (model: Model) => Html =
-(model) =>
+const indexScreen: (params: IndexParams, model: Model) => Html =
+(params, model) =>
   <div className="app-layout">
     <div className="top-affordance"></div>
     <div className="top-bar">
-      <button className="navigation">
-        <i className="material-icons">arrow_back</i>
-      </button>
       <div className="title">
         Liftrackr
       </div>
@@ -113,14 +130,32 @@ const indexScreen: (model: Model) => Html =
     <div className="content">
 
     </div>
-    <button className="primary-action" onClick={() => dispatch(navigate(Screen.create))}>
+    <button className="primary-action"
+            onClick={() => dispatch(navigate(createScene()))}>
       <i className="material-icons md-48">add</i>
     </button>
   </div>
 
-const createScreen: (model: Model) => Html =
-(model) =>
-  <div>void</div>
+const createScreen: (params: CreateParams, model: Model) => Html =
+(params, model) =>
+  <div className="app-layout">
+    <div className="top-affordance"></div>
+    <div className="top-bar">
+      <button className="navigation"
+              onClick={() => dispatch(navigate(indexScene()))}>
+        <i className="material-icons">arrow_back</i>
+      </button>
+      <div className="title">
+        New Lift
+      </div>
+    </div>
+    <div className="content">
+
+    </div>
+    {/* <button className="primary-action" onClick={() => dispatch(navigate(createScene()))}>
+      <i className="material-icons md-48">add</i>
+    </button> */}
+  </div>
 
 
 // -- Main
