@@ -78,7 +78,6 @@ input, textarea, select, button { font-family: inherit; font-size: inherit }
     color: @theme-on-secondary;
     background-color: @theme-secondary;
     position: absolute;
-    right: 16px;
     bottom: 16px;
     border: none;
     display: flex;
@@ -88,6 +87,15 @@ input, textarea, select, button { font-family: inherit; font-size: inherit }
 
     i.material-icons {
       font-size: 36px;
+    }
+
+    &.center {
+      left: 50%;
+      margin-left: -28px;
+    }
+
+    &.right {
+      right: 16px;
     }
   }
 }

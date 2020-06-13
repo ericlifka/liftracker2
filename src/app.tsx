@@ -130,7 +130,7 @@ const indexScreen: (params: IndexParams, model: Model) => Html =
     <div className="content">
 
     </div>
-    <button className="primary-action"
+    <button className="primary-action center"
             onClick={() => dispatch(navigate(createScene()))}>
       <i className="material-icons md-48">add</i>
     </button>
@@ -152,9 +152,10 @@ const createScreen: (params: CreateParams, model: Model) => Html =
     <div className="content">
 
     </div>
-    {/* <button className="primary-action" onClick={() => dispatch(navigate(createScene()))}>
-      <i className="material-icons md-48">add</i>
-    </button> */}
+    <button className="primary-action right"
+            onClick={() => console.log('save not implemented')}>
+      <i className="material-icons md-48">check</i>
+    </button>
   </div>
 
 
