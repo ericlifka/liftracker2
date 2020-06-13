@@ -3,6 +3,7 @@ import ReactDOM from "react-dom"
 import { createStore, applyMiddleware } from "redux"
 import thunkMiddleware from 'redux-thunk'
 import { createLogger as createLoggerMiddleware } from 'redux-logger'
+import './styles/app.less'
 
 
 // -- Model
@@ -55,7 +56,16 @@ const View: () => Html =
 
 const App: (props: { model: Model }) => Html =
 ({ model }) =>
-  <div></div>
+  <div className="app-layout">
+    <div className="top-affordance"></div>
+    <div className="top-bar">
+      Liftrackr
+    </div>
+    <div className="content">
+
+    </div>
+    <button className="primary-action">+</button>
+  </div>
 
 
 // -- Main

@@ -1,0 +1,78 @@
+@font-face: 'Montserrat', sans-serif;
+@theme-primary: #6200EE;
+@theme-secondary: #03DAC6;
+@theme-variant-primary: #3700B3;
+@theme-variant-secondary: #018786;
+@theme-error: #B00020;
+@theme-background: #FFFFFF;
+@theme-variant-background: #F0F0F0;
+@theme-surface: #FFFFFF;
+@theme-on-primary: #FFFFFF;
+@theme-on-secondary: #000000;
+@theme-on-background: #000000;
+@theme-on-surface: #000000;
+@theme-on-error: #FFFFFF;
+@theme-shadow: #CCCCCC;
+
+body, html {
+  margin: 0;
+  padding: 0;
+  font-family: @font-face;
+  font-size: 16px;
+}
+
+input, textarea, select, button { font-family: inherit; font-size: inherit }
+
+.app-layout {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+
+  .top-affordance {
+    flex-grow: 0;
+    height: 20px;
+    z-index: 3;
+    background-color: @theme-variant-primary;
+  }
+
+  .top-bar {
+    flex-grow: 0;
+    height: 56px;
+    z-index: 2;
+    box-shadow: 0px 0px 6px 0px @theme-shadow;
+    color: @theme-on-primary;
+    background-color: @theme-primary;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+  }
+
+  .content {
+    flex-grow: 1;
+    z-index: 1;
+    color: @theme-on-background;
+    background-color: @theme-background;
+    overflow-x: scroll;
+  }
+
+  .primary-action {
+    z-index: 2;
+    height: 56px;
+    width: 56px;
+    border-radius: 56px;
+    box-shadow: 0px 4px 16px 1px @theme-shadow;
+    color: @theme-on-secondary;
+    background-color: @theme-secondary;
+    position: absolute;
+    right: 16px;
+    bottom: 16px;
+    border: none;
+    font-size: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+  }
+}
