@@ -6,33 +6,68 @@ import { createLogger as createLoggerMiddleware } from 'redux-logger'
 import './styles/app.less'
 
 
-// -- Model
+
+// -- Models
+
+enum Screen
+  { index
+  , create
+  }
+
+type IndexParams = void
+type CreateParams = void
+
+type NavigationParams
+  = IndexParams
+  | CreateParams
+
 
 type Model =
-  {
+  { activeScreen: Screen
   }
 
 const init: () => Model =
 () => (
-  {
+  { activeScreen: Screen.index
   })
+
 
 
 // -- Update
 
-enum Actions
-  {
+enum Action
+  { navigate
   }
 
-type Msg
-  = { type: Actions }
 
-const update: (m: Model, ms: Msg) => Model =
+type NavigateAction =
+  { type: Action.navigate
+  , screen: Screen
+  , params: NavigationParams
+  }
+
+const navigate: (screen: Screen, params: NavigationParams) => NavigateAction =
+(screen, params) => (
+  { type: Action.navigate
+  , screen
+  , params
+  })
+
+
+type Msg
+  = NavigateAction
+
+const update: (model: Model, msg: Msg) => Model =
 (model, msg) => {
   switch (msg.type) {
+    case Action.navigate: return(
+      { ...model
+      , activeScreen: msg.screen
+      })
     default: return model
   }
 }
+
 
 
 // -- Store
@@ -40,6 +75,7 @@ const update: (m: Model, ms: Msg) => Model =
 const middleware = applyMiddleware(thunkMiddleware, createLoggerMiddleware())
 const store = createStore(update, init(), middleware)
 const { dispatch, getState, subscribe } = store
+
 
 
 // -- View
@@ -55,7 +91,15 @@ const View: () => Html =
 }
 
 const App: (props: { model: Model }) => Html =
-({ model }) =>
+({ model }) => {
+  switch (model.activeScreen) {
+    case Screen.index: return indexScreen(model)
+    case Screen.create: return createScreen(model)
+  }
+}
+
+const indexScreen: (model: Model) => Html =
+(model) =>
   <div className="app-layout">
     <div className="top-affordance"></div>
     <div className="top-bar">
@@ -69,8 +113,14 @@ const App: (props: { model: Model }) => Html =
     <div className="content">
 
     </div>
-    <button className="primary-action"><i className="material-icons md-48">add</i></button>
+    <button className="primary-action" onClick={() => dispatch(navigate(Screen.create))}>
+      <i className="material-icons md-48">add</i>
+    </button>
   </div>
+
+const createScreen: (model: Model) => Html =
+(model) =>
+  <div>void</div>
 
 
 // -- Main
