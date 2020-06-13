@@ -124,7 +124,7 @@ const indexScreen: (params: IndexParams, model: Model) => Html =
     <div className="top-affordance"></div>
     <div className="top-bar">
       <div className="title">
-        Liftrackr
+        liftracker
       </div>
     </div>
     <div className="content">
