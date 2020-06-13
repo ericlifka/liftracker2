@@ -30,7 +30,9 @@ input, textarea, select, button { font-family: inherit; font-size: inherit }
   display: flex;
   flex-direction: column;
 
-  .top-affordance {
+  &::before { // top affordance for mobile icons
+    display: block;
+    content: " ";
     flex-grow: 0;
     height: 20px;
     z-index: 3;

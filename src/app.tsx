@@ -121,7 +121,6 @@ const App: (props: { model: Model }) => Html =
 const indexScreen: (params: IndexParams, model: Model) => Html =
 (params, model) =>
   <div className="app-layout">
-    <div className="top-affordance"></div>
     <div className="top-bar">
       <div className="title">
         liftracker
@@ -139,7 +138,6 @@ const indexScreen: (params: IndexParams, model: Model) => Html =
 const createScreen: (params: CreateParams, model: Model) => Html =
 (params, model) =>
   <div className="app-layout">
-    <div className="top-affordance"></div>
     <div className="top-bar">
       <button className="navigation"
               onClick={() => dispatch(navigate(indexScene()))}>
