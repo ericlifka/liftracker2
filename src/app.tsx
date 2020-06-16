@@ -101,6 +101,7 @@ const { dispatch, getState, subscribe } = store
 
 type Html = JSX.Element
 
+
 const View: () => Html =
 () => {
   const [model, setModel] = useState<Model>(getState())
@@ -108,6 +109,7 @@ const View: () => Html =
 
   return <App model={model} />
 }
+
 
 const App: (props: { model: Model }) => Html =
 ({ model }) => {
@@ -118,20 +120,11 @@ const App: (props: { model: Model }) => Html =
   }
 }
 
+
 const indexScreen: (params: IndexParams, model: Model) => Html =
 (params, model) =>
   <div className="app-layout">
-    <div className="top-bar">
-      <div className="title">
-        liftracker
-      </div>
-      <button className="navigation right">
-        <i className="material-icons">show_chart</i>
-      </button>
-      <button className="navigation right">
-        <i className="material-icons">settings</i>
-      </button>
-    </div>
+    {topBar("liftracker")}
     <div className="content">
 
     </div>
@@ -141,27 +134,32 @@ const indexScreen: (params: IndexParams, model: Model) => Html =
     </button>
   </div>
 
+
 const createScreen: (params: CreateParams, model: Model) => Html =
 (params, model) =>
   <div className="app-layout">
-    <div className="top-bar context-form">
-      <button className="navigation"
-              onClick={() => dispatch(navigate(indexScene()))}>
-        <i className="material-icons">arrow_back</i>
-      </button>
-      <div className="title">
-        Create Lift
-      </div>
-      <button className="navigation right">
-        <i className="material-icons">show_chart</i>
-      </button>
-      <button className="navigation right">
-        <i className="material-icons">settings</i>
-      </button>
-    </div>
+    {topBar("Create Lift", true, navigate(indexScene()))}
     <div className="content">
       <CreateLiftForm />
     </div>
+  </div>
+
+
+const topBar: (title: string, isContextForm?: boolean, back?: NavigateAction | undefined) => Html =
+(title, isContextForm = false, back) =>
+  <div className={isContextForm ? "top-bar context-form" : "top-bar"}>
+    {back &&
+      <button className="navigation" onClick={() => dispatch(back)}>
+        <i className="material-icons">arrow_back</i>
+      </button>
+    }
+    <div className="title">{title}</div>
+    <button className="navigation right">
+      <i className="material-icons">show_chart</i>
+    </button>
+    <button className="navigation right">
+      <i className="material-icons">settings</i>
+    </button>
   </div>
 
 
