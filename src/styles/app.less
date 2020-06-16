@@ -1,4 +1,4 @@
-@font-face: 'Montserrat', sans-serif;
+@font-face: "Montserrat", sans-serif;
 
 @theme-primary: #00838f;
 @theme-secondary: #6200ea;
@@ -6,26 +6,33 @@
 @theme-variant-secondary: #0a00b6;
 @theme-variant-light-primary: #4fb3bf;
 @theme-variant-light-secondary: #9d46ff;
-@theme-error: #B00020;
-@theme-background: #FFFFFF;
-@theme-surface: #FFFFFF;
-@theme-on-primary: #FFFFFF;
+@theme-error: #b00020;
+@theme-background: #ffffff;
+@theme-surface: #ffffff;
+@theme-on-primary: #ffffff;
 @theme-on-light-primary: #000000;
-@theme-on-secondary: #FFFFFF;
+@theme-on-secondary: #ffffff;
 @theme-on-light-secondary: #000000;
 @theme-on-background: #000000;
 @theme-on-surface: #000000;
-@theme-on-error: #FFFFFF;
-@theme-shadow: #CCCCCC;
+@theme-on-error: #ffffff;
+@theme-shadow: #cccccc;
 
-body, html {
+body,
+html {
   margin: 0;
   padding: 0;
   font-family: @font-face;
   font-size: 16px;
 }
 
-input, textarea, select, button { font-family: inherit; font-size: inherit }
+input,
+textarea,
+select,
+button {
+  font-family: inherit;
+  font-size: inherit;
+}
 
 .app-layout {
   position: absolute;
@@ -34,7 +41,8 @@ input, textarea, select, button { font-family: inherit; font-size: inherit }
   display: flex;
   flex-direction: column;
 
-  &::before { // top affordance for mobile icons
+  &::before {
+    // top affordance for mobile icons
     display: block;
     content: " ";
     flex-grow: 0;
@@ -45,25 +53,37 @@ input, textarea, select, button { font-family: inherit; font-size: inherit }
 
   .top-bar {
     flex-grow: 0;
-    padding: 16px;
+    padding: 16px 4px;
     font-size: 24px;
     z-index: 2;
     box-shadow: 0px 0px 6px 0px @theme-shadow;
     color: @theme-on-primary;
     background-color: @theme-primary;
     display: flex;
-    align-items: center;
 
     .navigation {
       border: none;
-      padding: 0;
-      margin: 0 12px 0 0;
+      margin: 0;
+      padding: 2px 12px 0 12px;
       background: none;
       color: inherit;
       display: flex;
       justify-content: center;
-      align-items: center;
       cursor: pointer;
+
+      &.right {
+        justify-self: flex-end;
+      }
+    }
+
+    .title {
+      flex-grow: 1;
+      padding: 0 0 0 20px;
+    }
+    &.context-form {
+      .title {
+        padding-top: 66px;
+      }
     }
   }
 
@@ -106,3 +126,32 @@ input, textarea, select, button { font-family: inherit; font-size: inherit }
   }
 }
 
+form {
+  display: flex;
+  flex-direction: column;
+  margin: 16px 20px;
+
+  .form-input {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    margin: 16px 0 12px 0;
+
+    input,
+    select {
+      padding: 12px 16px;
+      border: 2px solid @theme-secondary;
+      border-radius: 4px;
+    }
+    label {
+      position: absolute;
+      top: -8px;
+      left: 12px;
+      background-color: @theme-surface;
+      padding: 0 5px;
+      color: @theme-secondary;
+      font-weight: bold;
+      font-size: 12px;
+    }
+  }
+}

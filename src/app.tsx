@@ -125,6 +125,12 @@ const indexScreen: (params: IndexParams, model: Model) => Html =
       <div className="title">
         liftracker
       </div>
+      <button className="navigation right">
+        <i className="material-icons">show_chart</i>
+      </button>
+      <button className="navigation right">
+        <i className="material-icons">settings</i>
+      </button>
     </div>
     <div className="content">
 
@@ -138,23 +144,61 @@ const indexScreen: (params: IndexParams, model: Model) => Html =
 const createScreen: (params: CreateParams, model: Model) => Html =
 (params, model) =>
   <div className="app-layout">
-    <div className="top-bar">
+    <div className="top-bar context-form">
       <button className="navigation"
               onClick={() => dispatch(navigate(indexScene()))}>
         <i className="material-icons">arrow_back</i>
       </button>
       <div className="title">
-        New Lift
+        Create Lift
       </div>
+      <button className="navigation right">
+        <i className="material-icons">show_chart</i>
+      </button>
+      <button className="navigation right">
+        <i className="material-icons">settings</i>
+      </button>
     </div>
     <div className="content">
-
+      <CreateLiftForm />
     </div>
-    <button className="primary-action right"
-            onClick={() => console.log('save not implemented')}>
+  </div>
+
+
+const CreateLiftForm: (props: { }) => Html =
+(props) => {
+  const [lift, setLift] = useState<string>("")
+  const [max, setMax] = useState<string>("")
+  const [increment, setIncrement] = useState<string>("5")
+
+  const save = (e) => {
+    e.preventDefault();
+    console.log('SAVE');
+  }
+  return <form onSubmit={e => save(e)}>
+    <div className="form-input">
+      <label for="lift-name">Lift Name</label>
+      <input id="lift-name" type="text" value={lift} placeholder="benchpress" onChange={e => setLift(e.target.value)} />
+    </div>
+
+    <div className="form-input">
+      <label for="max-value">Training Max</label>
+      <input id="max-value" type="number" value={max} placeholder="135" onChange={e => setMax(e.target.value)} />
+    </div>
+
+    <div className="form-input">
+      <label for="max-value">Increment</label>
+      <select value={increment} onChange={e => setIncrement(e.target.value)}>
+        <option value="5">5 lbs</option>
+        <option value="10">10 lbs</option>
+      </select>
+    </div>
+
+    <button className="primary-action right" type="submit">
       <i className="material-icons md-48">check</i>
     </button>
-  </div>
+  </form>
+}
 
 
 // -- Main
