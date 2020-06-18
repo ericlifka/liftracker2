@@ -3,6 +3,7 @@ import ReactDOM from "react-dom"
 import { createStore, applyMiddleware } from "redux"
 import thunkMiddleware from 'redux-thunk'
 import { createLogger as createLoggerMiddleware } from 'redux-logger'
+import { createLift, queryLifts } from './modules/database'
 import './styles/app.less'
 
 
@@ -175,17 +176,17 @@ const CreateLiftForm: (props: { }) => Html =
   }
   return <form onSubmit={e => save(e)}>
     <div className="form-input">
-      <label for="lift-name">Lift Name</label>
+      <label htmlFor="lift-name">Lift Name</label>
       <input id="lift-name" type="text" value={lift} placeholder="benchpress" onChange={e => setLift(e.target.value)} />
     </div>
 
     <div className="form-input">
-      <label for="max-value">Training Max</label>
+      <label htmlFor="max-value">Training Max</label>
       <input id="max-value" type="number" value={max} placeholder="135" onChange={e => setMax(e.target.value)} />
     </div>
 
     <div className="form-input">
-      <label for="max-value">Increment</label>
+      <label htmlFor="max-value">Increment</label>
       <select value={increment} onChange={e => setIncrement(e.target.value)}>
         <option value="5">5 lbs</option>
         <option value="10">10 lbs</option>
