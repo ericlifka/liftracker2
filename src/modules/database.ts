@@ -14,11 +14,21 @@ import { Promise } from 'es6-promise'
 
 */
 
+export type SetIncrement
+  = 5
+  | 10
+
+export type WeightRound
+  = 1
+  | 2.5
+  | 5
+
 export type Lift =
   { id: string
   , name: string
   , max: number
-  , increment: number
+  , increment: SetIncrement
+  , round: WeightRound
   }
 
 export const queryLifts: () => Promise<Lift[]> =
@@ -28,13 +38,14 @@ export const queryLifts: () => Promise<Lift[]> =
     ids.map(loadLift))
   )
 
-export const createLift: (name: string, max: number, increment: number) => Promise<Lift> =
-(name, max, increment) => new Promise(resolve => {
+export const createLift: (name: string, max: number, increment: SetIncrement, round: WeightRound) => Promise<Lift> =
+(name, max, increment, round) => new Promise(resolve => {
   let lift =
     { id: uuid4()
     , name
     , max
     , increment
+    , round
     }
 
   loadLifts().then( ids => {
