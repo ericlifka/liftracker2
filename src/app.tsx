@@ -4,7 +4,9 @@ import { createStore, applyMiddleware } from "redux"
 import thunkMiddleware from 'redux-thunk'
 import { createLogger as createLoggerMiddleware } from 'redux-logger'
 import { Promise } from 'es6-promise'
-import { Lift, createLift, queryLifts, SetIncrement, WeightRound } from './modules/database'
+
+import { createLift, queryLifts } from './database'
+import { Lift, CycleIncrement, WeightRound } from './types'
 import './styles/app.less'
 
 
@@ -129,19 +131,15 @@ const update: (model: Model, msg: Msg) => Model =
 
 // -- Async
 
-const loadData: () => (dispatch: Function) => Promise<Lift[]> =
+const loadData: () => (dispatch: Function) => Promise<void> =
 () => dispatch =>
-  queryLifts().then( lifts => {
-    dispatch(setData(lifts))
-    return lifts
-  })
+  queryLifts().then( lifts =>
+    dispatch(setData(lifts)))
 
-const newLift: (name: string, max: number, increment: SetIncrement, round: WeightRound) => (dispatch: Function) => Promise<Lift> =
+const newLift: (name: string, max: number, increment: CycleIncrement, round: WeightRound) => (dispatch: Function) => Promise<void> =
 (name, max, increment, round) => dispatch =>
-  createLift(name, max, increment, round).then( lift => {
-    dispatch(addLift(lift))
-    return lift
-  })
+  createLift(name, max, increment, round).then( lift =>
+    dispatch(addLift(lift)))
 
 
 
@@ -235,7 +233,7 @@ const CreateLiftForm: (props: { }) => Html =
     const create = newLift(
       lift,
       parseInt(max, 10),
-      parseInt(increment, 10) as SetIncrement,
+      parseInt(increment, 10) as CycleIncrement,
       parseInt(round, 10) as WeightRound)
 
     dispatch(create).then( () =>
