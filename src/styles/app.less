@@ -7,7 +7,7 @@
 @theme-variant-light-primary: #4fb3bf;
 @theme-variant-light-secondary: #9d46ff;
 @theme-error: #b00020;
-@theme-background: #ffffff;
+@theme-background: #fbfbfb;
 @theme-surface: #ffffff;
 @theme-on-primary: #ffffff;
 @theme-on-light-primary: #000000;
@@ -16,7 +16,6 @@
 @theme-on-background: #000000;
 @theme-on-surface: #000000;
 @theme-on-error: #ffffff;
-@theme-shadow: #cccccc;
 
 body,
 html {
@@ -56,7 +55,7 @@ button {
     padding: 16px 4px;
     font-size: 24px;
     z-index: 2;
-    box-shadow: 0px 0px 6px 0px @theme-shadow;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
     color: @theme-on-primary;
     background-color: @theme-primary;
     display: flex;
@@ -100,7 +99,9 @@ button {
     height: 56px;
     width: 56px;
     border-radius: 56px;
-    box-shadow: 0px 4px 16px 1px @theme-shadow;
+    box-shadow: 0px 2px 4px -1px rgba(0, 0, 0, 0.2),
+                0px 4px 5px 0px rgba(0, 0, 0, 0.14),
+                0px 1px 10px 0px rgba(0,0,0,.12);
     color: @theme-on-secondary;
     background-color: @theme-secondary;
     position: absolute;
@@ -152,6 +153,91 @@ form {
       color: @theme-secondary;
       font-weight: bold;
       font-size: 12px;
+    }
+  }
+}
+
+.card-list {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0 0 0;
+
+  .card {
+    margin: 8px 8px 0 8px;
+    border-radius: 3px;
+    overflow: hidden;
+    background-color: @theme-surface;
+    box-shadow: 0px 2px 1px -1px rgba(0, 0, 0, 0.2),
+                0px 1px 1px 0px rgba(0, 0, 0, 0.14),
+                0px 1px 3px 0px rgba(0,0,0,.12);
+  }
+
+  .row {
+    display: flex;
+    flex-direction: row;
+  }
+
+  .left, .right {
+    flex-grow: 1;
+  }
+
+  .title {
+    padding: 8px 12px;
+    font-size: 24px;
+  }
+
+  .secondary-actions {
+    padding: 0 0 8px 8px;
+    display: flex;
+  }
+
+  .direct-set-link {
+    background: none;
+    border: 1px solid @theme-variant-light-secondary;
+    color: @theme-variant-light-secondary;
+    border-radius: 3px;
+    margin-right: 12px;
+    font-size: 14px;
+    display: flex;
+    width: 76px;
+    height: 28px;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+
+    span {
+      display: inline-block;
+
+    }
+
+    &.done {
+      border-color: #ccc;
+      color: #ccc;
+      justify-content: space-around;
+      cursor: default;
+    }
+
+    i {
+      font-size: 18px;
+      color: @theme-variant-light-primary;
+    }
+  }
+
+  .next-set-link {
+    background: none;
+    border: none;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    color: @theme-variant-light-secondary;
+
+    i {
+      font-size: 36px;
+    }
+
+    &:active {
+      background-color: @theme-variant-light-secondary;
+      color: @theme-on-secondary;
     }
   }
 }

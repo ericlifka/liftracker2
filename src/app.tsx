@@ -190,13 +190,15 @@ const indexView: (params: IndexParams, model: Model) => Html =
   <div className="app-layout">
     {topBar("liftracker")}
     <div className="content">
-      {
-        model.lifts.map( lift => <div>{lift.name}</div>)
-      }
+      <div className="card-list">
+        {model.lifts.map( lift =>
+          <LiftLinkCard key={lift.id} lift={lift} />
+        )}
+      </div>
     </div>
     <button className="primary-action center"
             onClick={() => dispatch(navigate(createScene()))}>
-      <i className="material-icons md-48">add</i>
+      <i className="material-icons">add</i>
     </button>
   </div>
 
@@ -226,6 +228,34 @@ const topBar: (title: string, isContextForm?: boolean, back?: NavigateAction | u
     <button className="navigation right">
       <i className="material-icons">settings</i>
     </button>
+  </div>
+
+
+const LiftLinkCard : (props: { lift: Lift }) => Html =
+({ lift }) =>
+  <div className="card">
+    <div className="row">
+      <div className="left">
+        <div className="title">{lift.name}</div>
+        <div className="secondary-actions">
+          <button className="direct-set-link">
+            <span>5-5-5</span>
+          </button>
+          <button className="direct-set-link">
+            <span>3-3-3</span>
+          </button>
+          <button className="direct-set-link done">
+            <span>5-3-1</span>
+            <i className="material-icons">done</i>
+          </button>
+        </div>
+      </div>
+      <div className="right">
+        <button className="next-set-link">
+          <i className="material-icons">arrow_forward_ios</i>
+        </button>
+      </div>
+    </div>
   </div>
 
 
@@ -278,7 +308,7 @@ const CreateLiftForm: (props: { }) => Html =
     </div>
 
     <button className="primary-action right" type="submit">
-      <i className="material-icons md-48">check</i>
+      <i className="material-icons">check</i>
     </button>
   </form>
 }
