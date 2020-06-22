@@ -5,8 +5,8 @@ import thunkMiddleware from 'redux-thunk'
 import { createLogger as createLoggerMiddleware } from 'redux-logger'
 import { Promise } from 'es6-promise'
 
-import { createLift, queryLifts } from './database'
-import { Lift, CycleIncrement, WeightRound } from './types'
+import { createLift, queryLifts, createCycle, queryCycles } from './database'
+import { Lift, CycleIncrement, WeightRound, Cycle } from './types'
 import './styles/app.less'
 
 
@@ -49,12 +49,14 @@ type ActiveScene
 type Model =
   { activeScene: ActiveScene
   , lifts: Lift[]
+  , cycles: Cycle[]
   }
 
 const init: () => Model =
 () => (
   { activeScene: indexScene()
   , lifts: []
+  , cycles: []
   })
 
 
@@ -82,21 +84,25 @@ const navigate: (scene: ActiveScene) => NavigateAction =
 type SetDataAction =
   { type: Action.setData
   , lifts: Lift[]
+  , cycles: Cycle[]
   }
-const setData: (lifts: Lift[]) => SetDataAction =
-(lifts) => (
+const setData: (lifts: Lift[], cycles: Cycle[]) => SetDataAction =
+(lifts, cycles) => (
   { type: Action.setData
   , lifts
+  , cycles
   })
 
 type AddLiftAction =
   { type: Action.addLift
   , lift: Lift
+  , cycle: Cycle
   }
-const addLift: (lift: Lift) => AddLiftAction =
-(lift) => (
+const addLift: (lift: Lift, cycle: Cycle) => AddLiftAction =
+(lift, cycle) => (
   { type: Action.addLift
   , lift
+  , cycle
   })
 
 
@@ -116,11 +122,13 @@ const update: (model: Model, msg: Msg) => Model =
     case Action.setData: return (
       { ...model
       , lifts: [ ...msg.lifts ]
+      , cycles: [ ...msg.cycles ]
       })
 
     case Action.addLift: return (
       { ...model
       , lifts: [ ...model.lifts, msg.lift ]
+      , cycles: [ ...model.cycles, msg.cycle ]
       })
 
     default: return model
@@ -133,13 +141,14 @@ const update: (model: Model, msg: Msg) => Model =
 
 const loadData: () => (dispatch: Function) => Promise<void> =
 () => dispatch =>
-  queryLifts().then( lifts =>
-    dispatch(setData(lifts)))
+  Promise.all([ queryLifts(), queryCycles() ]).then(([ lifts, cycles ]) =>
+    dispatch(setData(lifts, cycles)))
 
 const newLift: (name: string, max: number, increment: CycleIncrement, round: WeightRound) => (dispatch: Function) => Promise<void> =
 (name, max, increment, round) => dispatch =>
   createLift(name, max, increment, round).then( lift =>
-    dispatch(addLift(lift)))
+    createCycle(lift.id).then ( cycle =>
+      dispatch(addLift(lift, cycle))))
 
 
 
@@ -170,13 +179,13 @@ const App: (props: { model: Model }) => Html =
 ({ model }) => {
   const { scene, params } = model.activeScene
   switch (scene) {
-    case Scene.index: return indexScreen(params, model)
-    case Scene.create: return createScreen(params, model)
+    case Scene.index: return indexView(params, model)
+    case Scene.create: return createView(params, model)
   }
 }
 
 
-const indexScreen: (params: IndexParams, model: Model) => Html =
+const indexView: (params: IndexParams, model: Model) => Html =
 (params, model) =>
   <div className="app-layout">
     {topBar("liftracker")}
@@ -192,7 +201,7 @@ const indexScreen: (params: IndexParams, model: Model) => Html =
   </div>
 
 
-const createScreen: (params: CreateParams, model: Model) => Html =
+const createView: (params: CreateParams, model: Model) => Html =
 (params, model) =>
   <div className="app-layout">
     {topBar("Create Lift", true, navigate(indexScene()))}
