@@ -6,7 +6,7 @@ import { createLogger as createLoggerMiddleware } from 'redux-logger'
 import { Promise } from 'es6-promise'
 
 import { createLift, queryLifts, createCycle, queryCycles } from './database'
-import { Lift, CycleIncrement, WeightRound, Cycle } from './types'
+import { Lift, CycleIncrement, Workout, WeightRound, Cycle } from './types'
 import './styles/app.less'
 
 
@@ -16,10 +16,15 @@ import './styles/app.less'
 enum Scene
   { index = 'index'
   , create = 'create'
+  , workout = 'workout'
   }
 
 type IndexParams = null
 type CreateParams = null
+type WorkoutParams =
+  { lift: Lift
+  , workout: Workout
+  }
 
 type IndexScene =
   { scene: Scene.index
@@ -41,9 +46,20 @@ const createScene: () => CreateScene =
   , params: null
   })
 
+type WorkoutScene =
+  { scene: Scene.workout
+  , params: WorkoutParams
+  }
+const workoutScene: (lift: Lift, workout: Workout) => WorkoutScene =
+(lift, workout) => (
+  { scene: Scene.workout
+  , params: { lift, workout }
+  })
+
 type ActiveScene
   = IndexScene
   | CreateScene
+  | WorkoutScene
 
 
 type Model =
@@ -177,10 +193,11 @@ const View: () => Html =
 
 const App: (props: { model: Model }) => Html =
 ({ model }) => {
-  const { scene, params } = model.activeScene
-  switch (scene) {
-    case Scene.index: return indexView(params, model)
-    case Scene.create: return createView(params, model)
+  let { activeScene } = model
+  switch (activeScene.scene) {
+    case Scene.index: return indexView(activeScene.params, model)
+    case Scene.create: return createView(activeScene.params, model)
+    case Scene.workout: return workoutView(activeScene.params, model)
   }
 }
 
@@ -209,6 +226,16 @@ const createView: (params: CreateParams, model: Model) => Html =
     {topBar("Create Lift", true, navigate(indexScene()))}
     <div className="content">
       <CreateLiftForm />
+    </div>
+  </div>
+
+
+const workoutView: (params: WorkoutParams, model: Model) => Html =
+(params, model) =>
+  <div className="app-layout">
+    {topBar(`${params.lift.name} ${params.workout}`, true, navigate(indexScene()))}
+    <div className="content">
+      workout view
     </div>
   </div>
 
@@ -251,7 +278,8 @@ const LiftLinkCard : (props: { lift: Lift }) => Html =
         </div>
       </div>
       <div className="right">
-        <button className="next-set-link">
+        <button className="next-set-link"
+                onClick={() => dispatch(navigate(workoutScene(lift, "5-5-5")))}>
           <i className="material-icons">arrow_forward_ios</i>
         </button>
       </div>

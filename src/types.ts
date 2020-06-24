@@ -8,6 +8,11 @@ export type WeightRound
   | 2.5
   | 5
 
+export type Workout
+  = "5-5-5"
+  | "3-3-3"
+  | "5-3-1"
+
 export type Cycle =
   { lift_id: string
   , five: null | Date
