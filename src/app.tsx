@@ -7,7 +7,7 @@ import { Promise } from 'es6-promise'
 
 import { createLift, queryLifts, createCycle, queryCycles } from './database'
 import { Lift, CycleIncrement, Workout, WeightRound, Cycle } from './types'
-import './styles/app.less'
+import './styles.less'
 
 
 
