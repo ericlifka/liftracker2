@@ -21,22 +21,22 @@ const CommonPlates: number[] =
   [ 45, 25, 10, 5, 2.5 ]
 
 const WorkoutSpecs: { [s: string]: MovementSpec[] } =
-  { 'warmup':
+  { [Workout.warmup]:
     [ { percent: .4, reps: 5 }
     , { percent: .5, reps: 5 }
     , { percent: .6, reps: 3 }
     ]
-  , '5-5-5':
+  , [Workout.five]:
     [ { percent: .65, reps: 5 }
     , { percent: .75, reps: 5 }
     , { percent: .85, reps: 5 }
     ]
-  , '3-3-3':
+  , [Workout.three]:
     [ { percent: .7, reps: 3 }
     , { percent: .8, reps: 3 }
     , { percent: .9, reps: 3 }
     ]
-  , '5-3-1':
+  , [Workout.one]:
     [ { percent: .75, reps: 5 }
     , { percent: .85, reps: 3 }
     , { percent: .95, reps: 1 }
@@ -284,7 +284,7 @@ const createView: (params: CreateParams, model: Model) => Html =
 
 const workoutView: (params: WorkoutParams, model: Model) => Html =
 ({ lift, workout }, model) => <>
-  {topBar(`${lift.name} ${workout}`, navigate(indexScene()))}
+  {topBar(`${lift.name}`, navigate(indexScene()))}
   <div className="content">
     <div className="card-list">
       {generateWorkout(lift, workout)}
@@ -296,7 +296,7 @@ const workoutView: (params: WorkoutParams, model: Model) => Html =
 const logView: (params: LogParams, model: Model) => Html =
 ({ lift, workout, movement }, model) => <>
   {topBar(`Log Workout`, navigate(indexScene()), true)}
-  <LogWorkoutForm lift={lift} movement={movement} />
+  <LogWorkoutForm lift={lift} workout={workout} movement={movement} />
 </>
 
 
@@ -322,18 +322,18 @@ const topBar: (title: string, back?: NavigateAction | undefined, isContextForm?:
   </div>
 
 
-const generateWorkout: (lift: Lift, workoutName: Workout) => Html =
-(lift, workoutName) => {
+const generateWorkout: (lift: Lift, workout: Workout) => Html =
+(lift, workout) => {
   let { max, round } = lift
-  let warmup: Movement[] = applyWorkoutSpec(max, Bar, CommonPlates, round, WorkoutSpecs['warmup'])
-  let workout: Movement[] = applyWorkoutSpec(max, Bar, CommonPlates, round, WorkoutSpecs[workoutName])
-  let lastSet = workout[ workout.length - 1 ]
+  let warmupMovements: Movement[] = applyWorkoutSpec(max, Bar, CommonPlates, round, WorkoutSpecs['warmup'])
+  let workoutMovements: Movement[] = applyWorkoutSpec(max, Bar, CommonPlates, round, WorkoutSpecs[workout])
+  let lastSet = workoutMovements[ workoutMovements.length - 1 ]
 
   return <>
-    {workoutCard('Warmup', warmup)}
-    {workoutCard('Workout', workout, true)}
+    {workoutCard('Warmup', warmupMovements)}
+    {workoutCard(`Workout - ${workout}+`, workoutMovements, true)}
     <button className="primary-action right"
-            onClick={() => dispatch(navigate(logScene(lift, workoutName, lastSet)))}>
+            onClick={() => dispatch(navigate(logScene(lift, workout, lastSet)))}>
       <i className="material-icons">done</i>
     </button>
   </>
@@ -378,7 +378,7 @@ const LiftLinkCard : (props: { lift: Lift }) => Html =
       </div>
       <div className="right">
         <button className="next-set-link"
-                onClick={() => dispatch(navigate(workoutScene(lift, "5-5-5")))}>
+                onClick={() => dispatch(navigate(workoutScene(lift, Workout.five)))}>
           <i className="material-icons">arrow_forward_ios</i>
         </button>
       </div>

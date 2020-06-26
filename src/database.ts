@@ -1,7 +1,7 @@
 import { v4 as uuid4 } from 'uuid'
 import { Promise } from 'es6-promise'
 
-import { Lift, Cycle, CycleIncrement, WeightRound } from './types'
+import { Lift, Cycle, CycleIncrement, WeightRound, Workout } from './types'
 
 /* -- Schema Tables
 
@@ -92,9 +92,9 @@ export const createLift: (name: string, max: number, increment: CycleIncrement, 
 
 
 type CycleRecord =
-  { five: null | Date
-  , three: null | Date
-  , one: null | Date
+  { [Workout.five]: null | Date
+  , [Workout.three]: null | Date
+  , [Workout.one]: null | Date
   }
 
 type CyclesDB =
@@ -111,7 +111,11 @@ export const queryCycles: () => Promise<Cycle[]> =
 export const createCycle: (lift_id: string) => Promise<Cycle> =
 (lift_id) =>
   loadCycles().then( (cyclesDB: CyclesDB) => {
-    const record: CycleRecord = { five: null, three: null, one: null }
+    const record: CycleRecord =
+      { [Workout.five]: null
+      , [Workout.three]: null
+      , [Workout.one]: null
+      }
 
     cyclesDB[ lift_id ] = record
     localStorage.setItem('cycles', JSON.stringify(cyclesDB))

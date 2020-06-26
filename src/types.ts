@@ -8,11 +8,12 @@ export type WeightRound
   | 2.5
   | 5
 
-export type Workout
-  = "5-5-5"
-  | "3-3-3"
-  | "5-3-1"
-  | "warmup"
+export enum Workout
+  { five = "5-5-5"
+  , three = "3-3-3"
+  , one = "5-3-1"
+  , warmup = "warmup"
+  }
 
 export type MovementSpec =
   { percent: number
@@ -27,9 +28,9 @@ export type Movement =
 
 export type Cycle =
   { lift_id: string
-  , five: null | Date
-  , three: null | Date
-  , one: null | Date
+  , [Workout.five]: null | Date
+  , [Workout.three]: null | Date
+  , [Workout.one]: null | Date
   }
 
 export type Lift =
