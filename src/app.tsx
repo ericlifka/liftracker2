@@ -251,7 +251,7 @@ const workoutView: (params: WorkoutParams, model: Model) => Html =
 
 
 
-// -- Helpers
+// -- View Helpers
 
 
 const topBar: (title: string, isContextForm?: boolean, back?: NavigateAction | undefined) => Html =
@@ -273,8 +273,11 @@ const topBar: (title: string, isContextForm?: boolean, back?: NavigateAction | u
 
 
 const workout555: (max: number) => Html =
-(max) =>
-  <>
+(max) => {
+  let set = [
+
+  ]
+  return <>
     <div className="card workout">
       <div className="row title">Warmup</div>
       <div className="row movement-description">
@@ -312,7 +315,7 @@ const workout555: (max: number) => Html =
       </div>
     </div>
   </>
-
+}
 
 
 // -- Components
@@ -400,6 +403,35 @@ const CreateLiftForm: (props: { }) => Html =
     </button>
   </form>
 }
+
+
+
+// -- Utilities
+
+const oneRepEstimate: (weight: number, reps: number) => number =
+(weight, reps) => Math.round(
+  weight * ( 1 + Math.min(reps, 12) / 30 ))
+
+
+const calcPlates: (plates: number[], remaining: number) => number[] =
+(plates, remaining) => {
+  if (plates.length === 0 || remaining <= 0)
+    return []
+
+  let [ largest, ...rest ] = plates
+
+  if (2 * largest > remaining)
+    return calcPlates(rest, remaining)
+  else
+    return [ largest
+           , ...calcPlates(plates, remaining - (2 * largest))
+           ]
+}
+
+const roundToFactor: (weight: number, factor?: number, half?: number) => number =
+(weight, factor = 5, half = factor / 2) =>
+  factor * Math.floor( (weight + half) / factor )
+
 
 
 // -- Main
