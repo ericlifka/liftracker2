@@ -12,6 +12,18 @@ export type Workout
   = "5-5-5"
   | "3-3-3"
   | "5-3-1"
+  | "warmup"
+
+export type MovementSpec =
+  { percent: number
+  , reps: number
+  }
+
+export type Movement =
+  { weight: number
+  , reps: number
+  , plates: number[]
+  }
 
 export type Cycle =
   { lift_id: string

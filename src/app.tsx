@@ -6,12 +6,42 @@ import { createLogger as createLoggerMiddleware } from 'redux-logger'
 import { Promise } from 'es6-promise'
 
 import { createLift, queryLifts, createCycle, queryCycles } from './database'
-import { Lift, CycleIncrement, Workout, WeightRound, Cycle } from './types'
+import { Lift, CycleIncrement, Workout, WeightRound, Cycle, Movement, MovementSpec } from './types'
 import './styles.less'
 
 
 
 // -- Models
+
+
+const Bar: number =
+  45
+
+const CommonPlates: number[] =
+  [ 45, 25, 10, 5, 2.5 ]
+
+const WorkoutSpecs: { [s: string]: MovementSpec[] } =
+  { 'warmup':
+    [ { percent: .4, reps: 5 }
+    , { percent: .5, reps: 5 }
+    , { percent: .6, reps: 3 }
+    ]
+  , '5-5-5':
+    [ { percent: .65, reps: 5 }
+    , { percent: .75, reps: 5 }
+    , { percent: .85, reps: 5 }
+    ]
+  , '3-3-3':
+    [ { percent: .7, reps: 3 }
+    , { percent: .8, reps: 3 }
+    , { percent: .9, reps: 3 }
+    ]
+  , '5-3-1':
+    [ { percent: .75, reps: 5 }
+    , { percent: .85, reps: 3 }
+    , { percent: .95, reps: 1 }
+    ]
+  }
 
 
 enum Scene
@@ -235,16 +265,12 @@ const createView: (params: CreateParams, model: Model) => Html =
 
 
 const workoutView: (params: WorkoutParams, model: Model) => Html =
-(params, model) =>
+({ lift, workout }, model) =>
   <div className="app-layout">
-    {topBar(`${params.lift.name} ${params.workout}`, true, navigate(indexScene()))}
+    {topBar(`${lift.name} ${workout}`, true, navigate(indexScene()))}
     <div className="content">
       <div className="card-list">
-        {(() => { switch(params.workout) {
-          case '5-5-5': return workout555(params.lift.max)
-          case '3-3-3': return workout333(params.lift.max)
-          case '5-3-1': return workout531(params.lift.max)
-        }})()}
+        {generateWorkout(workout, lift.max, lift.round)}
       </div>
     </div>
   </div>
@@ -272,50 +298,30 @@ const topBar: (title: string, isContextForm?: boolean, back?: NavigateAction | u
   </div>
 
 
-const workout555: (max: number) => Html =
-(max) => {
-  let set = [
+const generateWorkout: (workoutName: Workout, max: number, round: WeightRound) => Html =
+(workoutName, max, round) => {
+  let warmup: Movement[] = applyWorkoutSpec(max, Bar, CommonPlates, round, WorkoutSpecs['warmup'])
+  let workout: Movement[] = applyWorkoutSpec(max, Bar, CommonPlates, round, WorkoutSpecs[workoutName])
 
-  ]
   return <>
-    <div className="card workout">
-      <div className="row title">Warmup</div>
-      <div className="row movement-description">
-        <span className="weight">45<i>lbs</i></span>
-        <span className="reps">x5</span>
-        <span className="plates">[ ]</span>
-      </div>
-      <div className="row movement-description">
-        <span className="weight">55<i>lbs</i></span>
-        <span className="reps">x5</span>
-        <span className="plates">[ 5 ]</span>
-      </div>
-      <div className="row movement-description">
-        <span className="weight">65<i>lbs</i></span>
-        <span className="reps">x5</span>
-        <span className="plates">[ 10 ]</span>
-      </div>
-    </div>
-    <div className="card workout">
-      <div className="row title">Workout</div>
-      <div className="row movement-description">
-        <span className="weight">75<i>lbs</i></span>
-        <span className="reps">x5</span>
-        <span className="plates">[ 10, 5 ]</span>
-      </div>
-      <div className="row movement-description">
-        <span className="weight">85<i>lbs</i></span>
-        <span className="reps">x5</span>
-        <span className="plates">[ 10, 10 ]</span>
-      </div>
-      <div className="row movement-description">
-        <span className="weight">95<i>lbs</i></span>
-        <span className="reps">x5+</span>
-        <span className="plates">[ 10, 10, 5 ]</span>
-      </div>
-    </div>
+    {workoutCard('Warmup', warmup)}
+    {workoutCard('Workout', workout, true)}
   </>
 }
+
+
+const workoutCard: (title: string, movements: Movement[], plusSet?: boolean) => Html =
+(title, movements, plusSet) =>
+  <div className="card workout">
+    <div className="row title">{title}</div>
+    {movements.map(({ weight, reps, plates }, index) =>
+      <div className="row movement-description" key={index}>
+        <span className="weight">{weight}<i>lbs</i></span>
+        <span className="reps">x{reps}{isLast(!!plusSet, index, movements) && "+"}</span>
+        <span className="plates">[ {plates.join(', ')} ]</span>
+      </div>
+    )}
+  </div>
 
 
 // -- Components
@@ -408,6 +414,10 @@ const CreateLiftForm: (props: { }) => Html =
 
 // -- Utilities
 
+const isLast: (flag: boolean, i: number, list: any[]) => boolean =
+(flag, i, list) =>
+  flag && i === list.length - 1
+
 const oneRepEstimate: (weight: number, reps: number) => number =
 (weight, reps) => Math.round(
   weight * ( 1 + Math.min(reps, 12) / 30 ))
@@ -431,6 +441,23 @@ const calcPlates: (plates: number[], remaining: number) => number[] =
 const roundToFactor: (weight: number, factor?: number, half?: number) => number =
 (weight, factor = 5, half = factor / 2) =>
   factor * Math.floor( (weight + half) / factor )
+
+const applyWorkoutSpec: ( max: number
+                        , bar: number
+                        , userPlates: number[]
+                        , rounding: WeightRound
+                        , spec: MovementSpec[]) => Movement[] =
+(max, bar, userPlates, rounding, spec) =>
+  spec.map(movement => {
+    let appliedWeight = roundToFactor(movement.percent * max, rounding)
+    let weight = Math.max(appliedWeight, bar)
+    let plates = calcPlates(userPlates, weight - bar)
+
+    return { reps: movement.reps
+           , weight
+           , plates
+           }
+  })
 
 
 
