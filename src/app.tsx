@@ -48,6 +48,7 @@ enum Scene
   { index = 'index'
   , create = 'create'
   , workout = 'workout'
+  , log = 'log'
   }
 
 type IndexParams = null
@@ -55,6 +56,11 @@ type CreateParams = null
 type WorkoutParams =
   { lift: Lift
   , workout: Workout
+  }
+type LogParams =
+  { lift: Lift
+  , workout: Workout
+  , movement: Movement
   }
 
 type IndexScene =
@@ -87,10 +93,21 @@ const workoutScene: (lift: Lift, workout: Workout) => WorkoutScene =
   , params: { lift, workout }
   })
 
+type LogScene =
+  { scene: Scene.log
+  , params: LogParams
+  }
+const logScene: (lift: Lift, workout: Workout, movement: Movement) => LogScene =
+(lift, workout, movement) => (
+  { scene: Scene.log
+  , params: { lift, workout, movement }
+  })
+
 type ActiveScene
   = IndexScene
   | CreateScene
   | WorkoutScene
+  | LogScene
 
 
 type Model =
@@ -228,60 +245,67 @@ const View: () => Html =
 const App: (props: { model: Model }) => Html =
 ({ model }) => {
   let { activeScene } = model
-  switch (activeScene.scene) {
-    case Scene.index: return indexView(activeScene.params, model)
-    case Scene.create: return createView(activeScene.params, model)
-    case Scene.workout: return workoutView(activeScene.params, model)
-  }
+  return <div className="app-layout">
+    {(() => { switch (activeScene.scene) {
+      case Scene.index: return indexView(activeScene.params, model)
+      case Scene.create: return createView(activeScene.params, model)
+      case Scene.workout: return workoutView(activeScene.params, model)
+      case Scene.log: return logView(activeScene.params, model)
+    }})()}
+  </div>
 }
 
 
 const indexView: (params: IndexParams, model: Model) => Html =
-(params, model) =>
-  <div className="app-layout">
-    {topBar("liftracker")}
-    <div className="content">
-      <div className="card-list">
-        {model.lifts.map( lift =>
-          <LiftLinkCard key={lift.id} lift={lift} />
-        )}
-      </div>
+(params, model) => <>
+  {topBar("liftracker")}
+  <div className="content">
+    <div className="card-list">
+      {model.lifts.map( lift =>
+        <LiftLinkCard key={lift.id} lift={lift} />
+      )}
     </div>
-    <button className="primary-action center"
-            onClick={() => dispatch(navigate(createScene()))}>
-      <i className="material-icons">add</i>
-    </button>
   </div>
+  <button className="primary-action center"
+          onClick={() => dispatch(navigate(createScene()))}>
+    <i className="material-icons">add</i>
+  </button>
+</>
 
 
 const createView: (params: CreateParams, model: Model) => Html =
-(params, model) =>
-  <div className="app-layout">
-    {topBar("Create Lift", true, navigate(indexScene()))}
-    <div className="content">
-      <CreateLiftForm />
-    </div>
+(params, model) => <>
+  {topBar("Create Lift", navigate(indexScene()), true)}
+  <div className="content">
+    <CreateLiftForm />
   </div>
+</>
 
 
 const workoutView: (params: WorkoutParams, model: Model) => Html =
-({ lift, workout }, model) =>
-  <div className="app-layout">
-    {topBar(`${lift.name} ${workout}`, true, navigate(indexScene()))}
-    <div className="content">
-      <div className="card-list">
-        {generateWorkout(workout, lift.max, lift.round)}
-      </div>
+({ lift, workout }, model) => <>
+  {topBar(`${lift.name} ${workout}`, navigate(indexScene()))}
+  <div className="content">
+    <div className="card-list">
+      {generateWorkout(lift, workout)}
     </div>
   </div>
+</>
+
+
+const logView: (params: LogParams, model: Model) => Html =
+({ lift, workout, movement }, model) => <>
+  {topBar(`Log Workout`, navigate(indexScene()), true)}
+  <LogWorkoutForm lift={lift} movement={movement} />
+</>
 
 
 
 // -- View Helpers
 
 
-const topBar: (title: string, isContextForm?: boolean, back?: NavigateAction | undefined) => Html =
-(title, isContextForm = false, back) =>
+const topBar: (title: string, back?: NavigateAction | undefined, isContextForm?: boolean) => Html =
+(title, back, isContextForm = false) =>
   <div className={isContextForm ? "top-bar context-form" : "top-bar"}>
     {back &&
       <button className="navigation" onClick={() => dispatch(back)}>
@@ -298,14 +322,20 @@ const topBar: (title: string, isContextForm?: boolean, back?: NavigateAction | u
   </div>
 
 
-const generateWorkout: (workoutName: Workout, max: number, round: WeightRound) => Html =
-(workoutName, max, round) => {
+const generateWorkout: (lift: Lift, workoutName: Workout) => Html =
+(lift, workoutName) => {
+  let { max, round } = lift
   let warmup: Movement[] = applyWorkoutSpec(max, Bar, CommonPlates, round, WorkoutSpecs['warmup'])
   let workout: Movement[] = applyWorkoutSpec(max, Bar, CommonPlates, round, WorkoutSpecs[workoutName])
+  let lastSet = workout[ workout.length - 1 ]
 
   return <>
     {workoutCard('Warmup', warmup)}
     {workoutCard('Workout', workout, true)}
+    <button className="primary-action right"
+            onClick={() => dispatch(navigate(logScene(lift, workoutName, lastSet)))}>
+      <i className="material-icons">done</i>
+    </button>
   </>
 }
 
@@ -363,7 +393,7 @@ const CreateLiftForm: (props: { }) => Html =
   const [increment, setIncrement] = useState<string>("5")
   const [round, setRound] = useState<string>("5")
 
-  const save = (e) => {
+  const save = e => {
     e.preventDefault()
 
     const create = newLift(
@@ -379,12 +409,16 @@ const CreateLiftForm: (props: { }) => Html =
   return <form onSubmit={e => save(e)}>
     <div className="form-input">
       <label htmlFor="lift-name">Lift name</label>
-      <input id="lift-name" type="text" value={lift} placeholder="benchpress" onChange={e => setLift(e.target.value)} />
+      <input id="lift-name" type="text" placeholder="lift name"
+             value={lift}
+             onChange={e => setLift(e.target.value)} />
     </div>
 
     <div className="form-input">
       <label htmlFor="max-value">Training max</label>
-      <input id="max-value" type="number" value={max} placeholder="135" onChange={e => setMax(e.target.value)} />
+      <input id="max-value" type="number" placeholder="current max"
+             value={max}
+             onChange={e => setMax(e.target.value)} />
     </div>
 
     <div className="form-input">
@@ -402,6 +436,37 @@ const CreateLiftForm: (props: { }) => Html =
         <option value="2.5">2.5 lbs</option>
         <option value="1">1 lbs</option>
       </select>
+    </div>
+
+    <button className="primary-action right" type="submit">
+      <i className="material-icons">check</i>
+    </button>
+  </form>
+}
+
+
+const LogWorkoutForm: (props: { lift: Lift, workout: Workout, movement: Movement }) => Html =
+({ lift, workout, movement }) => {
+  const [weight, setWeight] = useState<number>(movement.weight)
+  const [reps, setReps] = useState<number>(movement.reps)
+
+  const save = e => {
+    e.preventDefault()
+  }
+
+  return <form onSubmit={e => save(e)}>
+    <div className="form-input">
+      <label htmlFor="lift-weight">Weight</label>
+      <input id="lift-name" type="number"
+             value={weight}
+             onChange={e => setWeight(parseInt(e.target.value, 10))} />
+    </div>
+
+    <div className="form-input">
+      <label htmlFor="lift-weight">Reps</label>
+      <input id="lift-name" type="number"
+             value={reps}
+             onChange={e => setReps(parseInt(e.target.value, 10))} />
     </div>
 
     <button className="primary-action right" type="submit">
