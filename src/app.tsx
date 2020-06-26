@@ -13,6 +13,7 @@ import './styles.less'
 
 // -- Models
 
+
 enum Scene
   { index = 'index'
   , create = 'create'
@@ -155,6 +156,7 @@ const update: (model: Model, msg: Msg) => Model =
 
 // -- Async
 
+
 const loadData: () => (dispatch: Function) => Promise<void> =
 () => dispatch =>
   Promise.all([ queryLifts(), queryCycles() ]).then(([ lifts, cycles ]) =>
@@ -170,6 +172,7 @@ const newLift: (name: string, max: number, increment: CycleIncrement, round: Wei
 
 // -- Store
 
+
 const middleware = applyMiddleware(thunkMiddleware, createLoggerMiddleware())
 const store = createStore(update, init(), middleware)
 const { dispatch: storeDispatch, getState, subscribe } = store
@@ -178,6 +181,7 @@ const dispatch = (dispatchable: Msg | Function) => storeDispatch<any>(dispatchab
 
 
 // -- View
+
 
 type Html = JSX.Element
 
@@ -235,9 +239,19 @@ const workoutView: (params: WorkoutParams, model: Model) => Html =
   <div className="app-layout">
     {topBar(`${params.lift.name} ${params.workout}`, true, navigate(indexScene()))}
     <div className="content">
-      workout view
+      <div className="card-list">
+        {(() => { switch(params.workout) {
+          case '5-5-5': return workout555(params.lift.max)
+          case '3-3-3': return workout333(params.lift.max)
+          case '5-3-1': return workout531(params.lift.max)
+        }})()}
+      </div>
     </div>
   </div>
+
+
+
+// -- Helpers
 
 
 const topBar: (title: string, isContextForm?: boolean, back?: NavigateAction | undefined) => Html =
@@ -256,6 +270,52 @@ const topBar: (title: string, isContextForm?: boolean, back?: NavigateAction | u
       <i className="material-icons">settings</i>
     </button>
   </div>
+
+
+const workout555: (max: number) => Html =
+(max) =>
+  <>
+    <div className="card workout">
+      <div className="row title">Warmup</div>
+      <div className="row movement-description">
+        <span className="weight">45<i>lbs</i></span>
+        <span className="reps">x5</span>
+        <span className="plates">[ ]</span>
+      </div>
+      <div className="row movement-description">
+        <span className="weight">55<i>lbs</i></span>
+        <span className="reps">x5</span>
+        <span className="plates">[ 5 ]</span>
+      </div>
+      <div className="row movement-description">
+        <span className="weight">65<i>lbs</i></span>
+        <span className="reps">x5</span>
+        <span className="plates">[ 10 ]</span>
+      </div>
+    </div>
+    <div className="card workout">
+      <div className="row title">Workout</div>
+      <div className="row movement-description">
+        <span className="weight">75<i>lbs</i></span>
+        <span className="reps">x5</span>
+        <span className="plates">[ 10, 5 ]</span>
+      </div>
+      <div className="row movement-description">
+        <span className="weight">85<i>lbs</i></span>
+        <span className="reps">x5</span>
+        <span className="plates">[ 10, 10 ]</span>
+      </div>
+      <div className="row movement-description">
+        <span className="weight">95<i>lbs</i></span>
+        <span className="reps">x5+</span>
+        <span className="plates">[ 10, 10, 5 ]</span>
+      </div>
+    </div>
+  </>
+
+
+
+// -- Components
 
 
 const LiftLinkCard : (props: { lift: Lift }) => Html =
