@@ -183,6 +183,28 @@ form {
   flex-direction: column;
   padding: 4px 0 0 0;
 
+  .inline-action {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 12px 8px;
+    border-radius: 3px;
+    margin: 16px 8px 0 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+
+    &.primary {
+      background-color: @theme-secondary;
+      color: @theme-on-secondary;
+    }
+    &.secondary {
+      background-color: @theme-background;
+      color: @theme-secondary;
+    }
+  }
+
   .card {
     margin: 8px 8px 0 8px;
     border-radius: 3px;

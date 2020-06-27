@@ -33,6 +33,13 @@ export type Cycle =
   , [Workout.one]: null | Date
   }
 
+export const DefaultCycle =
+  { id: 'abc123'
+  , [Workout.five]: null
+  , [Workout.three]: null
+  , [Workout.one]: null
+  }
+
 export type Lift =
   { id: string
   , name: string

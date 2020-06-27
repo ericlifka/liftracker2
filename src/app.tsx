@@ -6,7 +6,7 @@ import { createLogger as createLoggerMiddleware } from 'redux-logger'
 import { Promise } from 'es6-promise'
 
 import { createLift, queryLifts, createCycle, queryCycles, updateCycle, createLog, queryLogs } from './database'
-import { Lift, CycleIncrement, Workout, WeightRound, Cycle, Movement, MovementSpec, Log } from './types'
+import { Lift, CycleIncrement, Workout, WeightRound, Cycle, DefaultCycle, Movement, MovementSpec, Log } from './types'
 import './styles.less'
 
 
@@ -322,8 +322,13 @@ const indexView: (params: IndexParams, model: Model) => Html =
   <div className="content">
     <div className="card-list">
       {model.lifts.map( lift =>
-        <LiftLinkCard key={lift.id} lift={lift} cycle={getById(model.cycles, lift.id)}/>
+        <LiftLinkCard key={lift.id} lift={lift} cycle={getById(model.cycles, lift.id) || DefaultCycle}/>
       )}
+
+      <button className={"inline-action " + (cycleFinished(model.cycles) ? "primary" : "secondary")}
+            onClick={() => null}>
+        START NEW CYCLE
+      </button>
     </div>
   </div>
   <button className="primary-action center"
@@ -560,6 +565,14 @@ const allComplete: (cycle: Cycle) => boolean =
   !!(cycle[Workout.five]
   && cycle[Workout.three]
   && cycle[Workout.one])
+
+const cycleFinished: (cycles: Cycle[]) => boolean =
+(cycles) =>
+  cycles.reduce((result, cycle) =>
+    !!(result && cycle[Workout.five]
+              && cycle[Workout.three]
+              && cycle[Workout.one])
+    , true)
 
 const nextUncompleted: (cycle: Cycle) => Workout =
 (cycle) => !cycle[Workout.five] ? Workout.five
