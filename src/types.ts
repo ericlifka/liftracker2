@@ -27,7 +27,7 @@ export type Movement =
   }
 
 export type Cycle =
-  { lift_id: string
+  { id: string
   , [Workout.five]: null | Date
   , [Workout.three]: null | Date
   , [Workout.one]: null | Date
@@ -39,4 +39,13 @@ export type Lift =
   , max: number
   , increment: CycleIncrement
   , round: WeightRound
+  }
+
+export type Log =
+  { id: string
+  , lift_id: string
+  , date: Date
+  , weight: number
+  , reps: number
+  , orm: number
   }

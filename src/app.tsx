@@ -1,12 +1,12 @@
 import React, { useState } from "react"
 import ReactDOM from "react-dom"
-import { createStore, applyMiddleware } from "redux"
+import { createStore, applyMiddleware, Dispatch } from "redux"
 import thunkMiddleware from 'redux-thunk'
 import { createLogger as createLoggerMiddleware } from 'redux-logger'
 import { Promise } from 'es6-promise'
 
-import { createLift, queryLifts, createCycle, queryCycles } from './database'
-import { Lift, CycleIncrement, Workout, WeightRound, Cycle, Movement, MovementSpec } from './types'
+import { createLift, queryLifts, createCycle, queryCycles, updateCycle, createLog, queryLogs } from './database'
+import { Lift, CycleIncrement, Workout, WeightRound, Cycle, Movement, MovementSpec, Log } from './types'
 import './styles.less'
 
 
@@ -114,6 +114,7 @@ type Model =
   { activeScene: ActiveScene
   , lifts: Lift[]
   , cycles: Cycle[]
+  , logs: Log[]
   }
 
 const init: () => Model =
@@ -121,6 +122,7 @@ const init: () => Model =
   { activeScene: indexScene()
   , lifts: []
   , cycles: []
+  , logs: []
   })
 
 
@@ -131,6 +133,8 @@ enum Action
   { navigate = 'navigate'
   , setData = 'setData'
   , addLift = 'addLift'
+  , addLog = 'addLog'
+  , cycleUpdated = 'cycleUpdated'
   }
 
 
@@ -149,12 +153,14 @@ type SetDataAction =
   { type: Action.setData
   , lifts: Lift[]
   , cycles: Cycle[]
+  , logs: Log[]
   }
-const setData: (lifts: Lift[], cycles: Cycle[]) => SetDataAction =
-(lifts, cycles) => (
+const setData: (lifts: Lift[], cycles: Cycle[], logs: Log[]) => SetDataAction =
+(lifts, cycles, logs) => (
   { type: Action.setData
   , lifts
   , cycles
+  , logs
   })
 
 type AddLiftAction =
@@ -169,16 +175,38 @@ const addLift: (lift: Lift, cycle: Cycle) => AddLiftAction =
   , cycle
   })
 
+type AddLogAction =
+  { type: Action.addLog
+  , log: Log
+  }
+const addLog: (log: Log) => AddLogAction =
+(log) => (
+  { type: Action.addLog
+  , log
+  })
+
+type CycleUpdateAction =
+  { type: Action.cycleUpdated
+  , cycle: Cycle
+  }
+const cycleUpdated: (cycle: Cycle) => CycleUpdateAction =
+(cycle) => (
+  { type: Action.cycleUpdated
+  , cycle
+  })
+
 
 type Msg
   = NavigateAction
   | SetDataAction
   | AddLiftAction
+  | AddLogAction
+  | CycleUpdateAction
 
 const update: (model: Model, msg: Msg) => Model =
 (model, msg) => {
   switch (msg.type) {
-    case Action.navigate: return(
+    case Action.navigate: return (
       { ...model
       , activeScene: { ...msg.scene }
       })
@@ -187,12 +215,26 @@ const update: (model: Model, msg: Msg) => Model =
       { ...model
       , lifts: [ ...msg.lifts ]
       , cycles: [ ...msg.cycles ]
+      , logs: [ ...msg.logs ]
       })
 
     case Action.addLift: return (
       { ...model
       , lifts: [ ...model.lifts, msg.lift ]
       , cycles: [ ...model.cycles, msg.cycle ]
+      })
+
+    case Action.addLog: return (
+      { ...model
+      , logs: [ msg.log, ...model.logs ]
+      })
+
+    case Action.cycleUpdated: return (
+      { ...model
+      , cycles: model.cycles.map( cycle =>
+          cycle.id === msg.cycle.id
+            ? { ...msg.cycle }
+            : cycle )
       })
 
     default: return model
@@ -204,16 +246,34 @@ const update: (model: Model, msg: Msg) => Model =
 // -- Async
 
 
-const loadData: () => (dispatch: Function) => Promise<void> =
+const loadData: () => (dispatch: Dispatch) => Promise<any> =
 () => dispatch =>
-  Promise.all([ queryLifts(), queryCycles() ]).then(([ lifts, cycles ]) =>
-    dispatch(setData(lifts, cycles)))
+  Promise.all([ queryLifts(), queryCycles(), queryLogs() ])
+  .then(([ lifts, cycles, logs ]) =>
+    dispatch(setData(lifts, cycles, logs)))
 
-const newLift: (name: string, max: number, increment: CycleIncrement, round: WeightRound) => (dispatch: Function) => Promise<void> =
+const newLift: (name: string, max: number, increment: CycleIncrement, round: WeightRound) => (dispatch: Dispatch) => Promise<any> =
 (name, max, increment, round) => dispatch =>
   createLift(name, max, increment, round).then( lift =>
     createCycle(lift.id).then ( cycle =>
       dispatch(addLift(lift, cycle))))
+
+const logWorkout: (lift: Lift, workout: Workout, weight: number, reps: number, orm: number) => (dispatch: Dispatch, getState: Function) => Promise<any> =
+(lift, workout, weight, reps, orm) => (dispatch, getState) =>
+  createLog(lift.id, new Date(), weight, reps, orm).then( log => {
+    dispatch(addLog(log))
+
+    let cycle = getState().cycles.find( cycle => cycle.id === lift.id)
+    if (!cycle) {
+      console.log("Couldn't find cycle model associated with lift model", lift.id)
+      return
+    }
+
+    let newCycle = { ...cycle, [workout]: log.date }
+    return updateCycle(newCycle).then(() => {
+      dispatch(cycleUpdated(newCycle))
+    })
+  })
 
 
 
@@ -262,7 +322,7 @@ const indexView: (params: IndexParams, model: Model) => Html =
   <div className="content">
     <div className="card-list">
       {model.lifts.map( lift =>
-        <LiftLinkCard key={lift.id} lift={lift} />
+        <LiftLinkCard key={lift.id} lift={lift} cycle={getById(model.cycles, lift.id)}/>
       )}
     </div>
   </div>
@@ -357,33 +417,38 @@ const workoutCard: (title: string, movements: Movement[], plusSet?: boolean) => 
 // -- Components
 
 
-const LiftLinkCard : (props: { lift: Lift }) => Html =
-({ lift }) =>
+const LiftLinkCard: (props: { lift: Lift, cycle: Cycle }) => Html =
+({ lift, cycle }) =>
   <div className="card">
     <div className="row">
       <div className="left">
         <div className="title">{lift.name}</div>
         <div className="secondary-actions">
-          <button className="direct-set-link">
-            <span>5-5-5</span>
-          </button>
-          <button className="direct-set-link">
-            <span>3-3-3</span>
-          </button>
-          <button className="direct-set-link done">
-            <span>5-3-1</span>
-            <i className="material-icons">done</i>
-          </button>
+          {directWorkoutButton(lift, cycle, Workout.five)}
+          {directWorkoutButton(lift, cycle, Workout.three)}
+          {directWorkoutButton(lift, cycle, Workout.one)}
         </div>
       </div>
       <div className="right">
-        <button className="next-set-link"
-                onClick={() => dispatch(navigate(workoutScene(lift, Workout.five)))}>
+        <button className="next-set-link" disabled={allComplete(cycle)}
+                onClick={() => dispatch(navigate(workoutScene(lift, nextUncompleted(cycle))))}>
           <i className="material-icons">arrow_forward_ios</i>
         </button>
       </div>
     </div>
   </div>
+
+const directWorkoutButton: (lift: Lift, cycle: Cycle, workout: Workout) => Html =
+(lift, cycle, workout) =>
+  !!cycle[workout]
+    ? <button className="direct-set-link" disabled>
+        <span>{workout}</span>
+        <i className="material-icons">done</i>
+      </button>
+    : <button className="direct-set-link"
+              onClick={() => dispatch(navigate(workoutScene(lift, workout)))}>
+        <span>{workout}</span>
+      </button>
 
 
 const CreateLiftForm: (props: { }) => Html =
@@ -452,9 +517,16 @@ const LogWorkoutForm: (props: { lift: Lift, workout: Workout, movement: Movement
 
   const save = e => {
     e.preventDefault()
+
+    dispatch(logWorkout(lift, workout, weight, reps, oneRepEstimate(weight, reps))).then(() =>
+      dispatch(navigate(indexScene())))
   }
 
   return <form onSubmit={e => save(e)}>
+    <div className="form-title">
+      {lift.name} - {workout}
+    </div>
+
     <div className="form-input">
       <label htmlFor="lift-weight">Weight</label>
       <input id="lift-name" type="number"
@@ -469,6 +541,10 @@ const LogWorkoutForm: (props: { lift: Lift, workout: Workout, movement: Movement
              onChange={e => setReps(parseInt(e.target.value, 10))} />
     </div>
 
+    <div className="form-info">
+      Estimated one rep max: <strong>{oneRepEstimate(weight, reps)}</strong>
+    </div>
+
     <button className="primary-action right" type="submit">
       <i className="material-icons">check</i>
     </button>
@@ -478,6 +554,21 @@ const LogWorkoutForm: (props: { lift: Lift, workout: Workout, movement: Movement
 
 
 // -- Utilities
+
+const allComplete: (cycle: Cycle) => boolean =
+(cycle) =>
+  !!(cycle[Workout.five]
+  && cycle[Workout.three]
+  && cycle[Workout.one])
+
+const nextUncompleted: (cycle: Cycle) => Workout =
+(cycle) => !cycle[Workout.five] ? Workout.five
+         : !cycle[Workout.three] ? Workout.three
+         : Workout.one
+
+const getById: <T extends{ id: string }>(collection: T[], id: string) => T | undefined =
+(collection, id) =>
+  collection.find( item => item.id === id)
 
 const isLast: (flag: boolean, i: number, list: any[]) => boolean =
 (flag, i, list) =>

@@ -1,7 +1,7 @@
 import { v4 as uuid4 } from 'uuid'
 import { Promise } from 'es6-promise'
 
-import { Lift, Cycle, CycleIncrement, WeightRound, Workout } from './types'
+import { Lift, Cycle, CycleIncrement, WeightRound, Workout, Log } from './types'
 
 /* -- Schema Tables
 
@@ -23,6 +23,16 @@ import { Lift, Cycle, CycleIncrement, WeightRound, Workout } from './types'
       one: null | timestamp
     },
     ...
+  }
+
+  logs: {
+    log_id: {
+      lift_id: string,
+      date: timestamp,
+      weight: number,
+      reps: number,
+      orm: number,
+    }
   }
 
   for each item:
@@ -98,7 +108,7 @@ type CycleRecord =
   }
 
 type CyclesDB =
-  { [lift_id: string]: CycleRecord
+  { [id: string]: CycleRecord
   }
 
 
@@ -110,15 +120,60 @@ export const queryCycles: () => Promise<Cycle[]> =
 
 export const createCycle: (lift_id: string) => Promise<Cycle> =
 (lift_id) =>
-  loadCycles().then( (cyclesDB: CyclesDB) => {
+  loadCycles().then( (cyclesDb: CyclesDB) => {
     const record: CycleRecord =
       { [Workout.five]: null
       , [Workout.three]: null
       , [Workout.one]: null
       }
 
-    cyclesDB[ lift_id ] = record
-    localStorage.setItem('cycles', JSON.stringify(cyclesDB))
+    cyclesDb[ lift_id ] = record
+    localStorage.setItem('cycles', JSON.stringify(cyclesDb))
 
     return recordToEntity<CycleRecord, Cycle>(lift_id, record)
+  })
+
+export const updateCycle: (cycle: Cycle) => Promise<void> =
+(cycle) =>
+  loadCycles().then( (cyclesDb: CyclesDB) => {
+    const record: CycleRecord =
+      { [Workout.five]: cycle[Workout.five]
+      , [Workout.three]: cycle[Workout.three]
+      , [Workout.one]: cycle[Workout.one]
+      }
+
+    cyclesDb[ cycle.id ] = record
+    localStorage.setItem('cycles', JSON.stringify(cyclesDb))
+  })
+
+
+
+type LogRecord =
+  { lift_id: string
+  , date: Date
+  , weight: number
+  , reps: number
+  , orm: number
+  }
+
+type LogsDB =
+  { [id: string]: LogRecord
+  }
+
+const loadLogs: () => Promise<LogsDB> =
+  loadDbTable<LogsDB>('logs')
+
+export const queryLogs: () => Promise<Log[]> =
+  queryTable<LogsDB, LogRecord, Log>(loadLogs)
+
+export const createLog: (lift_id: string, date: Date, weight: number, reps: number, orm: number) => Promise<Log> =
+(lift_id, date, weight, reps, orm) =>
+  loadLogs().then( (logsDb: LogsDB) => {
+    const id = uuid4()
+    const record: LogRecord = { lift_id, date, weight, reps, orm }
+
+    logsDb[ id ] = record
+    localStorage.setItem('logs', JSON.stringify(logsDb))
+
+    return recordToEntity<LogRecord, Log>(id, record)
   })
