@@ -2,7 +2,9 @@
   "compilerOptions": {
     "strictNullChecks": true,
     "esModuleInterop": true,
+    "moduleResolution": "node",
     "jsx": "react",
+    "target": "ES2017",
     "lib": [
       "ES2017",
       "dom"
