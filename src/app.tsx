@@ -5,7 +5,7 @@ import thunkMiddleware from 'redux-thunk'
 import { createLogger as createLoggerMiddleware } from 'redux-logger'
 import { Promise } from 'es6-promise'
 
-import { createLift, queryLifts, createCycle, queryCycles, updateCycle, createLog, queryLogs } from './database'
+import { createLift, queryLifts, updateLift, createCycle, queryCycles, updateCycle, createLog, queryLogs } from './database'
 import { Lift, CycleIncrement, Workout, WeightRound, Cycle, DefaultCycle, Movement, MovementSpec, Log } from './types'
 import './styles.less'
 
@@ -49,6 +49,7 @@ enum Scene
   , create = 'create'
   , workout = 'workout'
   , log = 'log'
+  , finishCycle = 'finishCycle'
   }
 
 type IndexParams = null
@@ -62,6 +63,7 @@ type LogParams =
   , workout: Workout
   , movement: Movement
   }
+type FinishCycleParams = null
 
 type IndexScene =
   { scene: Scene.index
@@ -103,11 +105,22 @@ const logScene: (lift: Lift, workout: Workout, movement: Movement) => LogScene =
   , params: { lift, workout, movement }
   })
 
+type FinishCycleScene =
+  { scene: Scene.finishCycle
+  , params: FinishCycleParams
+  }
+const finishCycle: () => FinishCycleScene =
+() => (
+  { scene: Scene.finishCycle
+  , params: null
+  })
+
 type ActiveScene
   = IndexScene
   | CreateScene
   | WorkoutScene
   | LogScene
+  | FinishCycleScene
 
 
 type Model =
@@ -135,6 +148,7 @@ enum Action
   , addLift = 'addLift'
   , addLog = 'addLog'
   , cycleUpdated = 'cycleUpdated'
+  , liftUpdated = 'liftUpdated'
   }
 
 
@@ -185,14 +199,24 @@ const addLog: (log: Log) => AddLogAction =
   , log
   })
 
-type CycleUpdateAction =
+type CycleUpdatedAction =
   { type: Action.cycleUpdated
   , cycle: Cycle
   }
-const cycleUpdated: (cycle: Cycle) => CycleUpdateAction =
+const cycleUpdated: (cycle: Cycle) => CycleUpdatedAction =
 (cycle) => (
   { type: Action.cycleUpdated
   , cycle
+  })
+
+type LiftUpdatedAction =
+  { type: Action.liftUpdated
+  , lift: Lift
+  }
+const liftUpdated: (lift: Lift) => LiftUpdatedAction =
+(lift) => (
+  { type: Action.liftUpdated
+  , lift
   })
 
 
@@ -201,7 +225,8 @@ type Msg
   | SetDataAction
   | AddLiftAction
   | AddLogAction
-  | CycleUpdateAction
+  | CycleUpdatedAction
+  | LiftUpdatedAction
 
 const update: (model: Model, msg: Msg) => Model =
 (model, msg) => {
@@ -237,6 +262,14 @@ const update: (model: Model, msg: Msg) => Model =
             : cycle )
       })
 
+    case Action.liftUpdated: return (
+      { ...model
+      , lifts: model.lifts.map( lift =>
+          lift.id === msg.lift.id
+            ? { ...msg.lift }
+            : lift )
+      })
+
     default: return model
   }
 }
@@ -269,11 +302,26 @@ const logWorkout: (lift: Lift, workout: Workout, weight: number, reps: number, o
       return
     }
 
-    let newCycle = { ...cycle, [workout]: log.date }
-    return updateCycle(newCycle).then(() => {
+    return updateCycle({ ...cycle, [workout]: log.date }).then( newCycle => {
       dispatch(cycleUpdated(newCycle))
     })
   })
+
+const startNewCycle: (increasesMaxes: boolean) => (dispatch: Dispatch, getState: Function) => void =
+(incraseMaxes) => async (dispatch, getState) => {
+  let { lifts, cycles } = getState()
+  for (let cycle of cycles) {
+    let newCycle = await updateCycle({ ...DefaultCycle, id: cycle.id })
+    dispatch(cycleUpdated(newCycle))
+  }
+
+  if (incraseMaxes) {
+    for (let lift of lifts) {
+      let newLift = await updateLift({ ...lift, max: lift.max + lift.increment })
+      dispatch(liftUpdated(newLift))
+    }
+  }
+}
 
 
 
@@ -311,6 +359,7 @@ const App: (props: { model: Model }) => Html =
       case Scene.create: return createView(activeScene.params, model)
       case Scene.workout: return workoutView(activeScene.params, model)
       case Scene.log: return logView(activeScene.params, model)
+      case Scene.finishCycle: return finishCycleView(activeScene.params, model)
     }})()}
   </div>
 }
@@ -325,8 +374,8 @@ const indexView: (params: IndexParams, model: Model) => Html =
         <LiftLinkCard key={lift.id} lift={lift} cycle={getById(model.cycles, lift.id) || DefaultCycle}/>
       )}
 
-      <button className={"inline-action " + (cycleFinished(model.cycles) ? "primary" : "secondary")}
-            onClick={() => null}>
+      <button className={`inline-action ${cycleFinished(model.cycles) ? "primary" : "secondary"}`}
+            onClick={() => dispatch(navigate(finishCycle()))}>
         START NEW CYCLE
       </button>
     </div>
@@ -362,6 +411,13 @@ const logView: (params: LogParams, model: Model) => Html =
 ({ lift, workout, movement }, model) => <>
   {topBar(`Log Workout`, navigate(indexScene()), true)}
   <LogWorkoutForm lift={lift} workout={workout} movement={movement} />
+</>
+
+
+const finishCycleView: (params: FinishCycleParams, model: Model) => Html =
+(params, model) => <>
+  {topBar(`Start New Cycle`, navigate(indexScene()), true)}
+  <FinishCycleForm lifts={model.lifts}/>
 </>
 
 
@@ -477,37 +533,38 @@ const CreateLiftForm: (props: { }) => Html =
   }
 
   return <form onSubmit={e => save(e)}>
-    <div className="form-input">
-      <label htmlFor="lift-name">Lift name</label>
-      <input id="lift-name" type="text" placeholder="lift name"
-             value={lift}
-             onChange={e => setLift(e.target.value)} />
-    </div>
+    <div className="form-card">
+      <div className="form-input">
+        <label htmlFor="lift-name">Lift name</label>
+        <input id="lift-name" type="text" placeholder="lift name"
+              value={lift}
+              onChange={e => setLift(e.target.value)} />
+      </div>
 
-    <div className="form-input">
-      <label htmlFor="max-value">Training max</label>
-      <input id="max-value" type="number" placeholder="current max"
-             value={max}
-             onChange={e => setMax(e.target.value)} />
-    </div>
+      <div className="form-input">
+        <label htmlFor="max-value">Training max</label>
+        <input id="max-value" type="number" placeholder="current max"
+              value={max}
+              onChange={e => setMax(e.target.value)} />
+      </div>
 
-    <div className="form-input">
-      <label htmlFor="max-value">Set increment</label>
-      <select value={increment} onChange={e => setIncrement(e.target.value)}>
-        <option value="5">5 lbs</option>
-        <option value="10">10 lbs</option>
-      </select>
-    </div>
+      <div className="form-input">
+        <label htmlFor="max-value">Set increment</label>
+        <select value={increment} onChange={e => setIncrement(e.target.value)}>
+          <option value="5">5 lbs</option>
+          <option value="10">10 lbs</option>
+        </select>
+      </div>
 
-    <div className="form-input">
-      <label htmlFor="max-value">Round to</label>
-      <select value={round} onChange={e => setRound(e.target.value)}>
-        <option value="5">5 lbs</option>
-        <option value="2.5">2.5 lbs</option>
-        <option value="1">1 lbs</option>
-      </select>
+      <div className="form-input">
+        <label htmlFor="max-value">Round to</label>
+        <select value={round} onChange={e => setRound(e.target.value)}>
+          <option value="5">5 lbs</option>
+          <option value="2.5">2.5 lbs</option>
+          <option value="1">1 lbs</option>
+        </select>
+      </div>
     </div>
-
     <button className="primary-action right" type="submit">
       <i className="material-icons">check</i>
     </button>
@@ -528,26 +585,65 @@ const LogWorkoutForm: (props: { lift: Lift, workout: Workout, movement: Movement
   }
 
   return <form onSubmit={e => save(e)}>
-    <div className="form-title">
-      {lift.name} - {workout}
-    </div>
+    <div className="form-card">
+      <div className="form-title">
+        {lift.name} - {workout}
+      </div>
 
-    <div className="form-input">
-      <label htmlFor="lift-weight">Weight</label>
-      <input id="lift-name" type="number"
-             value={weight}
-             onChange={e => setWeight(parseInt(e.target.value, 10))} />
-    </div>
+      <div className="form-input">
+        <label htmlFor="lift-weight">Weight</label>
+        <input id="lift-name" type="number"
+              value={weight}
+              onChange={e => setWeight(parseInt(e.target.value, 10))} />
+      </div>
 
-    <div className="form-input">
-      <label htmlFor="lift-weight">Reps</label>
-      <input id="lift-name" type="number"
-             value={reps}
-             onChange={e => setReps(parseInt(e.target.value, 10))} />
-    </div>
+      <div className="form-input">
+        <label htmlFor="lift-weight">Reps</label>
+        <input id="lift-name" type="number"
+              value={reps}
+              onChange={e => setReps(parseInt(e.target.value, 10))} />
+      </div>
 
-    <div className="form-info">
-      Estimated one rep max: <strong>{oneRepEstimate(weight, reps)}</strong>
+      <div className="form-info">
+        Estimated one rep max: <strong>{oneRepEstimate(weight, reps)}</strong>
+      </div>
+
+      <button className="primary-action right" type="submit">
+        <i className="material-icons">check</i>
+      </button>
+    </div>
+  </form>
+}
+
+
+const FinishCycleForm: (props: {lifts: Lift[]}) => Html =
+({ lifts }) => {
+  const [increaseMaxes, setIncreaseMaxes] = useState<boolean>(true)
+  const submit = e => {
+    e.preventDefault()
+
+    dispatch(startNewCycle(increaseMaxes)).then(() =>
+      dispatch(navigate(indexScene())))
+  }
+
+  return <form onSubmit={e => submit(e)}>
+    <div className="form-card">
+      <div className="form-row">
+        <label htmlFor="increase-maxes">Increases Maxes?</label>
+        <button id="increase-maxes" type="button"
+                className={`toggle-button ${increaseMaxes ? "on" : "off"}`}
+                onClick={() => setIncreaseMaxes(!increaseMaxes)} />
+      </div>
+    </div>
+    <div className="form-card">
+      {lifts.map( lift =>
+        <div className="form-row" key={lift.id}>
+          <span className="grow">{lift.name}</span>
+          <span className="fixed">{lift.max}</span>
+          <i className="material-icons fixed">arrow_right_alt</i>
+          <span className="fixed highlight">{increaseMaxes ? lift.max + lift.increment : lift.max}</span>
+        </div>
+      )}
     </div>
 
     <button className="primary-action right" type="submit">

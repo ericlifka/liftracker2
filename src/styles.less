@@ -130,7 +130,18 @@ button {
 form {
   display: flex;
   flex-direction: column;
-  margin: 16px 20px;
+  padding: 4px 0 0 0;
+
+  .form-card {
+    margin: 8px 8px 0 8px;
+    padding: 8px 16px;
+    border-radius: 3px;
+    overflow: hidden;
+    background-color: @theme-surface;
+    box-shadow: 0px 2px 1px -1px rgba(0, 0, 0, 0.2),
+                0px 1px 1px 0px rgba(0, 0, 0, 0.14),
+                0px 1px 3px 0px rgba(0,0,0,.12);
+  }
 
   .form-title {
     display: flex;
@@ -174,6 +185,71 @@ form {
       color: @theme-secondary;
       font-weight: bold;
       font-size: 12px;
+    }
+  }
+
+  .form-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 8px 4px;
+
+    label {
+      font-size: 18px;
+    }
+
+    .grow {
+      flex-grow: 1;
+    }
+
+    .fixed {
+      flex-grow: 0;
+      width: 36px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .highlight {
+      color: @theme-variant-light-secondary;
+    }
+  }
+
+  .toggle-button {
+    position: relative;
+    display: block;
+    width: 56px;
+    height: 28px;
+    border-radius: 14px;
+    border: 1px solid @theme-secondary;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    border: none;
+
+    &::before {
+      position: absolute;
+      display: block;
+      content: " ";
+      width: 20px;
+      height: 20px;
+      border-radius: 10px;
+      background-color: @theme-surface;
+      top: 4px;
+    }
+
+    &.off {
+      background-color: #ccc;
+      flex-direction: row;
+      &::before {
+        left: 4px;
+      }
+    }
+    &.on {
+      background-color: @theme-secondary;
+      flex-direction: row-reverse;
+      &::before {
+        right: 4px;
+      }
     }
   }
 }

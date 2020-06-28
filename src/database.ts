@@ -89,14 +89,30 @@ export const queryLifts: () => Promise<Lift[]> =
 
 export const createLift: (name: string, max: number, increment: CycleIncrement, round: WeightRound) => Promise<Lift> =
 (name, max, increment, round) =>
-  loadLifts().then( (liftsDB: LiftsDB) => {
+  loadLifts().then( (liftsDb: LiftsDB) => {
     const id = uuid4()
     const record: LiftRecord = { name, max, increment, round }
 
-    liftsDB[ id ] = record
-    localStorage.setItem('lifts', JSON.stringify(liftsDB))
+    liftsDb[ id ] = record
+    localStorage.setItem('lifts', JSON.stringify(liftsDb))
 
     return recordToEntity<LiftRecord, Lift>(id, record)
+  })
+
+export const updateLift: (lift: Lift) => Promise<Lift> =
+(lift) =>
+  loadLifts().then( (liftsDb: LiftsDB) => {
+    const record: LiftRecord =
+      { name: lift.name
+      , max: lift.max
+      , increment: lift.increment
+      , round: lift.round
+      }
+
+    liftsDb[ lift.id ] = record
+    localStorage.setItem('lifts', JSON.stringify(liftsDb))
+
+    return recordToEntity<LiftRecord, Lift>(lift.id, record)
   })
 
 
@@ -133,7 +149,7 @@ export const createCycle: (lift_id: string) => Promise<Cycle> =
     return recordToEntity<CycleRecord, Cycle>(lift_id, record)
   })
 
-export const updateCycle: (cycle: Cycle) => Promise<void> =
+export const updateCycle: (cycle: Cycle) => Promise<Cycle> =
 (cycle) =>
   loadCycles().then( (cyclesDb: CyclesDB) => {
     const record: CycleRecord =
@@ -143,7 +159,10 @@ export const updateCycle: (cycle: Cycle) => Promise<void> =
       }
 
     cyclesDb[ cycle.id ] = record
+    console.log('updating cycle ' + cycle.id)
     localStorage.setItem('cycles', JSON.stringify(cyclesDb))
+
+    return recordToEntity<CycleRecord, Cycle>(cycle.id, record)
   })
 
 
