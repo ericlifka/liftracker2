@@ -48,14 +48,19 @@ enum Scene
   { loading = 'loading'
   , index = 'index'
   , create = 'create'
+  , edit = 'edit'
   , workout = 'workout'
   , log = 'log'
   , finishCycle = 'finishCycle'
+  , settings = 'settings'
   }
 
 type LoadingParams = null
 type IndexParams = null
 type CreateParams = null
+type EditParams =
+  { lift: Lift
+  }
 type WorkoutParams =
   { lift: Lift
   , workout: Workout
@@ -66,6 +71,7 @@ type LogParams =
   , movement: Movement
   }
 type FinishCycleParams = null
+type SettingsParams = null
 
 type LoadingScene =
   { scene: Scene.loading
@@ -97,6 +103,16 @@ const createScene: () => CreateScene =
   , params: null
   })
 
+type EditScene =
+  { scene: Scene.edit
+  , params: EditParams
+  }
+const editScene: (lift: Lift) => EditScene =
+(lift) => (
+  { scene: Scene.edit
+  , params: { lift }
+  })
+
 type WorkoutScene =
   { scene: Scene.workout
   , params: WorkoutParams
@@ -121,9 +137,19 @@ type FinishCycleScene =
   { scene: Scene.finishCycle
   , params: FinishCycleParams
   }
-const finishCycle: () => FinishCycleScene =
+const finishCycleScene: () => FinishCycleScene =
 () => (
   { scene: Scene.finishCycle
+  , params: null
+  })
+
+type SettingsScene =
+  { scene: Scene.settings
+  , params: SettingsParams
+  }
+const settingsScene: () => SettingsScene =
+() => (
+  { scene: Scene.settings
   , params: null
   })
 
@@ -131,9 +157,11 @@ type ActiveScene
   = LoadingScene
   | IndexScene
   | CreateScene
+  | EditScene
   | WorkoutScene
   | LogScene
   | FinishCycleScene
+  | SettingsScene
 
 
 type Model =
@@ -309,6 +337,12 @@ const newLift: (name: string, max: number, increment: CycleIncrement, round: Wei
   dispatch(addLift(lift, cycle))
 }
 
+const editLift: (lift: Lift, name: string, max: number, increment: CycleIncrement, round: WeightRound) => (dispatch: Dispatch) => Promise<void> =
+(lift, name, max, increment, round) => async dispatch => {
+  let newLift = await updateLift({ id: lift.id, name, max, increment, round })
+  dispatch(liftUpdated(newLift))
+}
+
 const logWorkout: (lift: Lift, workout: Workout, weight: number, reps: number, orm: number) => (dispatch: Dispatch, getState: Function) => Promise<void> =
 (lift, workout, weight, reps, orm) => async (dispatch, getState) => {
   let log = await createLog(lift.id, new Date(), weight, reps, orm)
@@ -374,9 +408,11 @@ const App: (props: { model: Model }) => Html =
       case Scene.loading: return loadingView(activeScene.params, model)
       case Scene.index: return indexView(activeScene.params, model)
       case Scene.create: return createView(activeScene.params, model)
+      case Scene.edit: return editView(activeScene.params, model)
       case Scene.workout: return workoutView(activeScene.params, model)
       case Scene.log: return logView(activeScene.params, model)
       case Scene.finishCycle: return finishCycleView(activeScene.params, model)
+      case Scene.settings: return settingsView(activeScene.params, model)
     }})()}
   </div>
 }
@@ -398,7 +434,7 @@ const indexView: (params: IndexParams, model: Model) => Html =
       )}
 
       <button className={`inline-action ${cycleFinished(model.cycles) ? "primary" : "secondary"}`}
-            onClick={() => dispatch(navigate(finishCycle()))}>
+            onClick={() => dispatch(navigate(finishCycleScene()))}>
         START NEW CYCLE
       </button>
     </div>
@@ -411,13 +447,37 @@ const indexView: (params: IndexParams, model: Model) => Html =
 
 
 const createView: (params: CreateParams, model: Model) => Html =
-(params, model) => <>
-  {topBar("Create Lift", navigate(indexScene()), true)}
-  <div className="content">
-    <CreateLiftForm />
-  </div>
-</>
+(params, model) => {
+  const save: (name: string, max: number, increment: CycleIncrement, round: WeightRound) => void =
+  (name, max, increment, round) => {
+    dispatch(newLift(name, max, increment, round)).then(() =>
+      dispatch(navigate(indexScene())))
+  }
 
+  return <>
+    {topBar("Create Lift", navigate(indexScene()), true)}
+    <div className="content">
+      <CreateLiftForm onSave={save} />
+    </div>
+  </>
+}
+
+
+const editView: (params: EditParams, model: Model) => Html =
+({ lift }, model) => {
+  const save: (name: string, max: number, increment: CycleIncrement, round: WeightRound) => void =
+  (name, max, increment, round) => {
+    dispatch(editLift(lift, name, max, increment, round)).then(() =>
+      dispatch(navigate(indexScene())))
+  }
+
+  return <>
+    {topBar("Edit Lift", navigate(settingsScene()), true)}
+    <div className="content">
+      <CreateLiftForm lift={lift} onSave={save} />
+    </div>
+  </>
+}
 
 const workoutView: (params: WorkoutParams, model: Model) => Html =
 ({ lift, workout }, model) => <>
@@ -440,7 +500,27 @@ const logView: (params: LogParams, model: Model) => Html =
 const finishCycleView: (params: FinishCycleParams, model: Model) => Html =
 (params, model) => <>
   {topBar(`Start New Cycle`, navigate(indexScene()), true)}
-  <FinishCycleForm lifts={model.lifts}/>
+  <FinishCycleForm lifts={model.lifts} />
+</>
+
+
+const settingsView: (params: SettingsParams, model: Model) => Html =
+(params, model) => <>
+  {topBar(`Settings`, navigate(indexScene()), true)}
+  <form>
+    <div className="form-card">
+      {model.lifts.map( lift =>
+        <div className="form-row" key={lift.id}>
+          <span className="grow">{lift.name}</span>
+          <span className="fixed">{lift.max}</span>
+          <button className="fixed icon-button" type="button"
+                  onClick={() => dispatch(navigate(editScene(lift)))}>
+            <i className="material-icons">edit</i>
+          </button>
+        </div>
+      )}
+    </div>
+  </form>
 </>
 
 
@@ -460,7 +540,7 @@ const topBar: (title: string, back?: NavigateAction | undefined, isContextForm?:
     <button className="navigation right">
       <i className="material-icons">show_chart</i>
     </button>
-    <button className="navigation right">
+    <button className="navigation right" onClick={() => dispatch(navigate(settingsScene()))}>
       <i className="material-icons">settings</i>
     </button>
   </div>
@@ -548,24 +628,26 @@ const LiftLinkCard: (props: { lift: Lift, cycle: Cycle }) => Html =
   </div>
 
 
-const CreateLiftForm: (props: { }) => Html =
-(props) => {
-  const [lift, setLift] = useState<string>("")
-  const [max, setMax] = useState<string>("")
-  const [increment, setIncrement] = useState<string>("5")
-  const [round, setRound] = useState<string>("5")
+type CreateLiftFormProps =
+  { lift?: Lift
+  , onSave: (name: string, max: number, increment: CycleIncrement, round: WeightRound) => void
+  }
+
+const CreateLiftForm: (props: CreateLiftFormProps) => Html =
+({ lift, onSave }) => {
+  const [name, setName] = useState<string>(lift ? lift.name : "")
+  const [max, setMax] = useState<string>(lift ? `${lift.max}` : "")
+  const [increment, setIncrement] = useState<string>(lift ? `${lift.increment}` : "5")
+  const [round, setRound] = useState<string>(lift ? `${lift.round}` : "5")
 
   const save = e => {
     e.preventDefault()
 
-    const create = newLift(
-      lift,
-      parseInt(max, 10),
-      parseInt(increment, 10) as CycleIncrement,
-      parseInt(round, 10) as WeightRound)
-
-    dispatch(create).then( () =>
-      dispatch(navigate(indexScene())))
+    onSave( name
+          , parseInt(max, 10)
+          , parseInt(increment, 10) as CycleIncrement
+          , parseInt(round, 10) as WeightRound
+          )
   }
 
   return <form onSubmit={e => save(e)}>
@@ -573,8 +655,8 @@ const CreateLiftForm: (props: { }) => Html =
       <div className="form-input">
         <label htmlFor="lift-name">Lift name</label>
         <input id="lift-name" type="text" placeholder="lift name"
-              value={lift}
-              onChange={e => setLift(e.target.value)} />
+              value={name}
+              onChange={e => setName(e.target.value)} />
       </div>
 
       <div className="form-input">
