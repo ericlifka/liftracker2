@@ -118,9 +118,9 @@ export const updateLift: (lift: Lift) => Promise<Lift> =
 
 
 type CycleRecord =
-  { [Workout.five]: null | Date
-  , [Workout.three]: null | Date
-  , [Workout.one]: null | Date
+  { [Workout.five]: boolean
+  , [Workout.three]: boolean
+  , [Workout.one]: boolean
   }
 
 type CyclesDB =

@@ -28,16 +28,16 @@ export type Movement =
 
 export type Cycle =
   { id: string
-  , [Workout.five]: null | Date
-  , [Workout.three]: null | Date
-  , [Workout.one]: null | Date
+  , [Workout.five]: boolean
+  , [Workout.three]: boolean
+  , [Workout.one]: boolean
   }
 
-export const DefaultCycle =
+export const DefaultCycle: Cycle =
   { id: 'abc123'
-  , [Workout.five]: null
-  , [Workout.three]: null
-  , [Workout.one]: null
+  , [Workout.five]: false
+  , [Workout.three]: false
+  , [Workout.one]: false
   }
 
 export type Lift =
