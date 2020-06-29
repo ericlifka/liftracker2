@@ -166,6 +166,7 @@ type ActiveScene
 
 type Model =
   { activeScene: ActiveScene
+  , sceneStack: ActiveScene[]
   , lifts: Lift[]
   , cycles: Cycle[]
   , logs: Log[]
@@ -173,7 +174,8 @@ type Model =
 
 const init: () => Model =
 () => (
-  { activeScene: indexScene()
+  { activeScene: loadingScene()
+  , sceneStack: []
   , lifts: []
   , cycles: []
   , logs: []
@@ -185,6 +187,7 @@ const init: () => Model =
 
 enum Action
   { navigate = 'navigate'
+  , navigateBack = 'navigateBack'
   , setData = 'setData'
   , addLift = 'addLift'
   , addLog = 'addLog'
@@ -201,6 +204,14 @@ const navigate: (scene: ActiveScene) => NavigateAction =
 (scene) => (
   { type: Action.navigate
   , scene
+  })
+
+type NavigateBackAction =
+  { type: Action.navigateBack
+  }
+const navigateBack: () => NavigateBackAction =
+() => (
+  { type: Action.navigateBack
   })
 
 
@@ -263,6 +274,7 @@ const liftUpdated: (lift: Lift) => LiftUpdatedAction =
 
 type Msg
   = NavigateAction
+  | NavigateBackAction
   | SetDataAction
   | AddLiftAction
   | AddLogAction
@@ -275,6 +287,13 @@ const update: (model: Model, msg: Msg) => Model =
     case Action.navigate: return (
       { ...model
       , activeScene: { ...msg.scene }
+      , sceneStack: [ model.activeScene, ...model.sceneStack ]
+      })
+
+    case Action.navigateBack: return (
+      { ...model
+      , activeScene: model.sceneStack[ 0 ] || indexScene()
+      , sceneStack: model.sceneStack.slice(1)
       })
 
     case Action.setData: return (
@@ -455,7 +474,7 @@ const createView: (params: CreateParams, model: Model) => Html =
   }
 
   return <>
-    {topBar("Create Lift", navigate(indexScene()), true)}
+    {topBar("Create Lift", true, true)}
     <div className="content">
       <CreateLiftForm onSave={save} />
     </div>
@@ -472,7 +491,7 @@ const editView: (params: EditParams, model: Model) => Html =
   }
 
   return <>
-    {topBar("Edit Lift", navigate(settingsScene()), true)}
+    {topBar("Edit Lift", true, true)}
     <div className="content">
       <CreateLiftForm lift={lift} onSave={save} />
     </div>
@@ -481,7 +500,7 @@ const editView: (params: EditParams, model: Model) => Html =
 
 const workoutView: (params: WorkoutParams, model: Model) => Html =
 ({ lift, workout }, model) => <>
-  {topBar(`${lift.name}`, navigate(indexScene()))}
+  {topBar(`${lift.name}`, true)}
   <div className="content">
     <div className="card-list">
       {generateWorkout(lift, workout)}
@@ -492,21 +511,21 @@ const workoutView: (params: WorkoutParams, model: Model) => Html =
 
 const logView: (params: LogParams, model: Model) => Html =
 ({ lift, workout, movement }, model) => <>
-  {topBar(`Log Workout`, navigate(indexScene()), true)}
+  {topBar(`Log Workout`, true, true)}
   <LogWorkoutForm lift={lift} workout={workout} movement={movement} />
 </>
 
 
 const finishCycleView: (params: FinishCycleParams, model: Model) => Html =
 (params, model) => <>
-  {topBar(`Start New Cycle`, navigate(indexScene()), true)}
+  {topBar(`Start New Cycle`, true, true)}
   <FinishCycleForm lifts={model.lifts} />
 </>
 
 
 const settingsView: (params: SettingsParams, model: Model) => Html =
 (params, model) => <>
-  {topBar(`Settings`, navigate(indexScene()), true)}
+  {topBar(`Settings`, true, true)}
   <form>
     <div className="form-card">
       {model.lifts.map( lift =>
@@ -528,11 +547,11 @@ const settingsView: (params: SettingsParams, model: Model) => Html =
 // -- View Helpers
 
 
-const topBar: (title: string, back?: NavigateAction | undefined, isContextForm?: boolean) => Html =
+const topBar: (title: string, back?: boolean, isContextForm?: boolean) => Html =
 (title, back, isContextForm = false) =>
   <div className={isContextForm ? "top-bar context-form" : "top-bar"}>
     {back &&
-      <button className="navigation" onClick={() => dispatch(back)}>
+      <button className="navigation" onClick={() => dispatch(navigateBack())}>
         <i className="material-icons">arrow_back</i>
       </button>
     }
@@ -600,7 +619,7 @@ const DataLoader: (props: {}) => Html =
   useEffect(() => {
     dispatch(loadData()).then(() =>
       dispatch(navigate(indexScene())))
-  })
+  }, [])
 
   return <></>
 }
@@ -851,8 +870,6 @@ const main: () => void =
   ReactDOM.render(
     <View />,
     document.getElementById("root"))
-
-  dispatch(navigate(loadingScene()))
 }
 
 
