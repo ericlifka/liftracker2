@@ -445,7 +445,7 @@ const loadingView: (params: LoadingParams, model: Model) => Html =
 
 const indexView: (params: IndexParams, model: Model) => Html =
 (params, model) => <>
-  {topBar("liftracker")}
+  <TopBar title="liftracker" />
   <div className="content">
     <div className="card-list">
       {model.lifts.map( lift =>
@@ -474,7 +474,7 @@ const createView: (params: CreateParams, model: Model) => Html =
   }
 
   return <>
-    {topBar("Create Lift", true, true)}
+    <TopBar title="Create Lift" back isContextForm />
     <div className="content">
       <CreateLiftForm onSave={save} />
     </div>
@@ -491,7 +491,7 @@ const editView: (params: EditParams, model: Model) => Html =
   }
 
   return <>
-    {topBar("Edit Lift", true, true)}
+    <TopBar title="Edit Lift" back isContextForm />
     <div className="content">
       <CreateLiftForm lift={lift} onSave={save} />
     </div>
@@ -500,7 +500,7 @@ const editView: (params: EditParams, model: Model) => Html =
 
 const workoutView: (params: WorkoutParams, model: Model) => Html =
 ({ lift, workout }, model) => <>
-  {topBar(`${lift.name}`, true)}
+  <TopBar title={lift.name} back />
   <div className="content">
     <div className="card-list">
       {generateWorkout(lift, workout)}
@@ -511,21 +511,21 @@ const workoutView: (params: WorkoutParams, model: Model) => Html =
 
 const logView: (params: LogParams, model: Model) => Html =
 ({ lift, workout, movement }, model) => <>
-  {topBar(`Log Workout`, true, true)}
+  <TopBar title="Log Workout" back isContextForm />
   <LogWorkoutForm lift={lift} workout={workout} movement={movement} />
 </>
 
 
 const finishCycleView: (params: FinishCycleParams, model: Model) => Html =
 (params, model) => <>
-  {topBar(`Start New Cycle`, true, true)}
+  <TopBar title="Start New Cycle" back isContextForm />
   <FinishCycleForm lifts={model.lifts} />
 </>
 
 
 const settingsView: (params: SettingsParams, model: Model) => Html =
 (params, model) => <>
-  {topBar(`Settings`, true, true)}
+  <TopBar title="Settings" back isContextForm />
   <form>
     <div className="form-card">
       {model.lifts.map( lift =>
@@ -546,23 +546,6 @@ const settingsView: (params: SettingsParams, model: Model) => Html =
 
 // -- View Helpers
 
-
-const topBar: (title: string, back?: boolean, isContextForm?: boolean) => Html =
-(title, back, isContextForm = false) =>
-  <div className={isContextForm ? "top-bar context-form" : "top-bar"}>
-    {back &&
-      <button className="navigation" onClick={() => dispatch(navigateBack())}>
-        <i className="material-icons">arrow_back</i>
-      </button>
-    }
-    <div className="title">{title}</div>
-    <button className="navigation right">
-      <i className="material-icons">show_chart</i>
-    </button>
-    <button className="navigation right" onClick={() => dispatch(navigate(settingsScene()))}>
-      <i className="material-icons">settings</i>
-    </button>
-  </div>
 
 
 const generateWorkout: (lift: Lift, workout: Workout) => Html =
@@ -622,6 +605,32 @@ const DataLoader: (props: {}) => Html =
   }, [])
 
   return <></>
+}
+
+
+const TopBar: (props: { title: string, back?: boolean, isContextForm?: boolean }) => Html =
+({ title, back, isContextForm }) => {
+  let activeScene = getState().activeScene.scene
+
+  const settingsButton = () =>
+    dispatch(activeScene === Scene.settings
+              ? navigateBack()
+              : dispatch(navigate(settingsScene())))
+
+  return <div className={isContextForm ? "top-bar context-form" : "top-bar"}>
+    {back &&
+      <button className="navigation" onClick={() => dispatch(navigateBack())}>
+        <i className="material-icons">arrow_back</i>
+      </button>
+    }
+    <div className="title">{title}</div>
+    <button className="navigation right">
+      <i className="material-icons">show_chart</i>
+    </button>
+    <button className="navigation right" onClick={settingsButton}>
+      <i className="material-icons">settings</i>
+    </button>
+  </div>
 }
 
 
