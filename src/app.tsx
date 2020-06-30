@@ -18,7 +18,7 @@ const Bar: number =
   45
 
 const CommonPlates: number[] =
-  [ 45, 25, 10, 5, 2.5 ]
+  [ 45, 25, 10, 5, 2.5, 1.25, .5, .25 ]
 
 const WorkoutSpecs: { [s: string]: MovementSpec[] } =
   { [Workout.warmup]:
@@ -706,7 +706,6 @@ const CreateLiftForm: (props: CreateLiftFormProps) => Html =
         <label htmlFor="max-value">Round to</label>
         <select value={round} onChange={e => setRound(e.target.value)}>
           <option value="5">5 lbs</option>
-          <option value="2.5">2.5 lbs</option>
           <option value="1">1 lbs</option>
         </select>
       </div>

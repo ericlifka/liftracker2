@@ -5,7 +5,6 @@ export type CycleIncrement
 
 export type WeightRound
   = 1
-  | 2.5
   | 5
 
 export enum Workout
