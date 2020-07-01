@@ -462,16 +462,23 @@ const indexView: (params: IndexParams, model: Model) => Html =
 (params, model) => <>
   <TopBar title="liftracker" hideBack />
   <div className="content">
-    <div className="card-list">
-      {model.lifts.map( lift =>
-        <LiftLinkCard key={lift.id} lift={lift} cycle={getById(model.cycles, lift.id) || DefaultCycle}/>
-      )}
+    {model.lifts.length === 0
+      ? <div className="intro-banner">
+          <div className="title">Welcome to liftracker!</div>
+          <div className="sub-title">Create a lift to get started.</div>
+          <i className="material-icons arrow">arrow_downward</i>
+        </div>
+      : <div className="card-list">
+          {model.lifts.map( lift =>
+            <LiftLinkCard key={lift.id} lift={lift} cycle={getById(model.cycles, lift.id) || DefaultCycle}/>
+          )}
 
-      <button className={`inline-action ${cycleFinished(model.cycles) ? "primary" : "secondary"}`}
-            onClick={() => dispatch(navigate(finishCycleScene()))}>
-        START NEW CYCLE
-      </button>
-    </div>
+          <button className={`inline-action ${cycleFinished(model.cycles) ? "primary" : "secondary"}`}
+                onClick={() => dispatch(navigate(finishCycleScene()))}>
+            START NEW CYCLE
+          </button>
+        </div>
+    }
   </div>
   <button className="primary-action center"
           onClick={() => dispatch(navigate(createScene()))}>
