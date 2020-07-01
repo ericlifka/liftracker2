@@ -169,7 +169,7 @@ export const updateCycle: (cycle: Cycle) => Promise<Cycle> =
 
 type LogRecord =
   { lift_id: string
-  , date: Date
+  , date: string
   , weight: number
   , reps: number
   , orm: number
@@ -185,7 +185,7 @@ const loadLogs: () => Promise<LogsDB> =
 export const queryLogs: () => Promise<Log[]> =
   queryTable<LogsDB, LogRecord, Log>(loadLogs)
 
-export const createLog: (lift_id: string, date: Date, weight: number, reps: number, orm: number) => Promise<Log> =
+export const createLog: (lift_id: string, date: string, weight: number, reps: number, orm: number) => Promise<Log> =
 (lift_id, date, weight, reps, orm) =>
   loadLogs().then( (logsDb: LogsDB) => {
     const id = uuid4()

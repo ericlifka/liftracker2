@@ -50,7 +50,7 @@ export type Lift =
 export type Log =
   { id: string
   , lift_id: string
-  , date: Date
+  , date: string
   , weight: number
   , reps: number
   , orm: number

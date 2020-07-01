@@ -3,6 +3,7 @@ import ReactDOM from "react-dom"
 import { createStore, applyMiddleware, Dispatch } from "redux"
 import thunkMiddleware from 'redux-thunk'
 import { createLogger as createLoggerMiddleware } from 'redux-logger'
+import { LineCanvas } from '@nivo/line'
 import "regenerator-runtime/runtime.js";
 
 import { createLift, queryLifts, updateLift, createCycle, queryCycles, updateCycle, createLog, queryLogs } from './database'
@@ -53,6 +54,7 @@ enum Scene
   , log = 'log'
   , finishCycle = 'finishCycle'
   , settings = 'settings'
+  , chart = 'chart'
   }
 
 type LoadingParams = null
@@ -72,6 +74,7 @@ type LogParams =
   }
 type FinishCycleParams = null
 type SettingsParams = null
+type ChartParams = null
 
 type LoadingScene =
   { scene: Scene.loading
@@ -153,6 +156,16 @@ const settingsScene: () => SettingsScene =
   , params: null
   })
 
+type ChartScene =
+  { scene: Scene.chart
+  , params: SettingsParams
+  }
+const chartScene: () => ChartScene =
+() => (
+  { scene: Scene.chart
+  , params: null
+  })
+
 type ActiveScene
   = LoadingScene
   | IndexScene
@@ -162,6 +175,7 @@ type ActiveScene
   | LogScene
   | FinishCycleScene
   | SettingsScene
+  | ChartScene
 
 
 type Model =
@@ -364,7 +378,7 @@ const editLift: (lift: Lift, name: string, max: number, increment: CycleIncremen
 
 const logWorkout: (lift: Lift, workout: Workout, weight: number, reps: number, orm: number) => (dispatch: Dispatch, getState: Function) => Promise<void> =
 (lift, workout, weight, reps, orm) => async (dispatch, getState) => {
-  let log = await createLog(lift.id, new Date(), weight, reps, orm)
+  let log = await createLog(lift.id, sanitizeDate(new Date()), weight, reps, orm)
   dispatch(addLog(log))
 
   let cycle = getById<Cycle>(getState().cycles, lift.id)
@@ -432,6 +446,7 @@ const App: (props: { model: Model }) => Html =
       case Scene.log: return logView(activeScene.params, model)
       case Scene.finishCycle: return finishCycleView(activeScene.params, model)
       case Scene.settings: return settingsView(activeScene.params, model)
+      case Scene.chart: return chartView(activeScene.params, model)
     }})()}
   </div>
 }
@@ -445,7 +460,7 @@ const loadingView: (params: LoadingParams, model: Model) => Html =
 
 const indexView: (params: IndexParams, model: Model) => Html =
 (params, model) => <>
-  <TopBar title="liftracker" />
+  <TopBar title="liftracker" hideBack />
   <div className="content">
     <div className="card-list">
       {model.lifts.map( lift =>
@@ -474,7 +489,7 @@ const createView: (params: CreateParams, model: Model) => Html =
   }
 
   return <>
-    <TopBar title="Create Lift" back isContextForm />
+    <TopBar title="Create Lift" isContextForm />
     <div className="content">
       <CreateLiftForm onSave={save} />
     </div>
@@ -491,7 +506,7 @@ const editView: (params: EditParams, model: Model) => Html =
   }
 
   return <>
-    <TopBar title="Edit Lift" back isContextForm />
+    <TopBar title="Edit Lift" isContextForm />
     <div className="content">
       <CreateLiftForm lift={lift} onSave={save} />
     </div>
@@ -500,7 +515,7 @@ const editView: (params: EditParams, model: Model) => Html =
 
 const workoutView: (params: WorkoutParams, model: Model) => Html =
 ({ lift, workout }, model) => <>
-  <TopBar title={lift.name} back />
+  <TopBar title={lift.name} />
   <div className="content">
     <div className="card-list">
       {generateWorkout(lift, workout)}
@@ -511,21 +526,21 @@ const workoutView: (params: WorkoutParams, model: Model) => Html =
 
 const logView: (params: LogParams, model: Model) => Html =
 ({ lift, workout, movement }, model) => <>
-  <TopBar title="Log Workout" back isContextForm />
+  <TopBar title="Log Workout" isContextForm />
   <LogWorkoutForm lift={lift} workout={workout} movement={movement} />
 </>
 
 
 const finishCycleView: (params: FinishCycleParams, model: Model) => Html =
 (params, model) => <>
-  <TopBar title="Start New Cycle" back isContextForm />
+  <TopBar title="Start New Cycle" isContextForm />
   <FinishCycleForm lifts={model.lifts} />
 </>
 
 
 const settingsView: (params: SettingsParams, model: Model) => Html =
 (params, model) => <>
-  <TopBar title="Settings" back isContextForm />
+  <TopBar title="Settings" isContextForm />
   <form>
     <div className="form-card">
       {model.lifts.map( lift =>
@@ -542,6 +557,46 @@ const settingsView: (params: SettingsParams, model: Model) => Html =
   </form>
 </>
 
+
+const chartView: (params: SettingsParams, model: Model) => Html =
+(params, model) => {
+  let lifts = {}
+  model.lifts.forEach((lift: Lift) => lifts[ lift.id ] = lift)
+
+  let buckets: {[id: string]: Log[]} = { }
+  model.logs.forEach((log: Log) => {
+    log.date = sanitizeDate(log.date)
+    if (buckets[log.lift_id])
+      buckets[log.lift_id].push(log)
+    else
+      buckets[log.lift_id] = [ log ]
+  })
+
+  let data = Object.entries(buckets).map(([id, bucket]: [string, Log[]]) => (
+    { id: lifts[ id ].name
+    , data: bucket.map(log => (
+      { x: log.date
+      , y: log.orm
+      }))
+    }))
+
+  return <>
+    <TopBar title="History" />
+    <LineCanvas
+      width={window.innerWidth}
+      height={window.innerHeight - 90}
+      margin={{top: 15, right: 15, bottom: 90, left: 30}}
+      pointSize={6}
+      curve="monotoneX"
+      yScale={{ type: 'linear', min: 0, max: 'auto', stacked: false }}
+      enableGridX={false}
+      axisBottom={{ tickRotation: -90 }}
+      isInteractive={false}
+      legends={[{anchor: 'bottom', direction: 'row', translateY: 90, itemWidth: (window.innerWidth - 80) / 2, itemHeight: 12}]}
+      data={data}
+    />
+  </>
+}
 
 
 // -- View Helpers
@@ -608,26 +663,31 @@ const DataLoader: (props: {}) => Html =
 }
 
 
-const TopBar: (props: { title: string, back?: boolean, isContextForm?: boolean }) => Html =
-({ title, back, isContextForm }) => {
+const TopBar: (props: { title: string, hideBack?: boolean, isContextForm?: boolean }) => Html =
+({ title, hideBack, isContextForm }) => {
   let activeScene = getState().activeScene.scene
 
-  const settingsButton = () =>
+  const settingsClick = () =>
     dispatch(activeScene === Scene.settings
               ? navigateBack()
-              : dispatch(navigate(settingsScene())))
+              : navigate(settingsScene()))
+
+  const chartClick = () =>
+    dispatch(activeScene === Scene.chart
+              ? navigateBack()
+              : navigate(chartScene()))
 
   return <div className={isContextForm ? "top-bar context-form" : "top-bar"}>
-    {back &&
+    {!hideBack &&
       <button className="navigation" onClick={() => dispatch(navigateBack())}>
         <i className="material-icons">arrow_back</i>
       </button>
     }
     <div className="title">{title}</div>
-    <button className="navigation right">
+    <button className="navigation right" type="button" onClick={chartClick}>
       <i className="material-icons">show_chart</i>
     </button>
-    <button className="navigation right" onClick={settingsButton}>
+    <button className="navigation right" type="button" onClick={settingsClick}>
       <i className="material-icons">settings</i>
     </button>
   </div>
@@ -800,6 +860,10 @@ const FinishCycleForm: (props: {lifts: Lift[]}) => Html =
 
 
 // -- Utilities
+
+const sanitizeDate: (d: string | Date) => string =
+(d) =>
+  new Date(d).toISOString().split('T')[0]
 
 const allComplete: (cycle: Cycle) => boolean =
 (cycle) =>

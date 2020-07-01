@@ -1,5 +1,6 @@
 ## things to be done, I guess, idk this is just a hobby
 
+* default view when no lifts configured
 * chart scene
 * customizable plates
 * editable history entries
